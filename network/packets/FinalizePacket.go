@@ -1,18 +1,24 @@
 package packets
 
-import "satae66.dev/netzeps2022/network"
+import (
+	"errors"
+)
 
 type FinalizePacket struct {
-	checksum [16]byte
+	header Header
 
-	header network.Header
+	checksum [16]byte
 }
 
-func NewFinalizePacket(header network.Header, checksum [16]byte) FinalizePacket {
+func NewFinalizePacket(header Header, checksum [16]byte) FinalizePacket {
 	return FinalizePacket{
 		checksum: checksum,
 		header:   header,
 	}
+}
+
+func (p FinalizePacket) Size() int {
+	return p.header.Size() + 16
 }
 
 func (p FinalizePacket) ToBytes() []byte {
@@ -25,4 +31,21 @@ func (p FinalizePacket) ToBytes() []byte {
 
 func (p FinalizePacket) GetType() PacketType {
 	return Finalize
+}
+
+func ParseFinalizePacket(data []byte) (FinalizePacket, error) {
+	if len(data) < (FinalizePacket{}.Size()) {
+		return FinalizePacket{}, errors.New("not enough data")
+	}
+
+	header, err := ParseHeader(data)
+	if err != nil {
+		return FinalizePacket{}, err
+	}
+	data = data[Header{}.Size():]
+
+	return FinalizePacket{
+		header:   header,
+		checksum: *(*[16]byte)(data),
+	}, nil
 }

@@ -3,22 +3,25 @@ package packets
 import (
 	"encoding/binary"
 	"errors"
-	"satae66.dev/netzeps2022/network"
 )
 
 type InfoPacket struct {
+	header Header
+
 	filesize uint64
 	filename string
-
-	header network.Header
 }
 
-func NewInfoPacket(header network.Header, filesize uint64, filename string) InfoPacket {
+func NewInfoPacket(header Header, filesize uint64, filename string) InfoPacket {
 	return InfoPacket{
 		filesize: filesize,
 		filename: filename,
 		header:   header,
 	}
+}
+
+func (p InfoPacket) Size() int {
+	return p.header.Size() + 8 + len(p.filename)
 }
 
 func (p InfoPacket) ToBytes() []byte {
@@ -38,11 +41,18 @@ func (p InfoPacket) GetType() PacketType {
 }
 
 func ParseInfoPacket(data []byte) (InfoPacket, error) {
-	if len(data) < 8 {
-		return InfoPacket{}, errors.New("to few data")
+	if len(data) < (InfoPacket{}.Size()) {
+		return InfoPacket{}, errors.New("not enough data")
 	}
 
+	header, err := ParseHeader(data)
+	if err != nil {
+		return InfoPacket{}, err
+	}
+	data = data[Header{}.Size():]
+
 	return InfoPacket{
+		header:   header,
 		filesize: binary.LittleEndian.Uint64(data[:8]),
 		filename: string(data[8:]),
 	}, nil

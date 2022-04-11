@@ -1,18 +1,24 @@
 package packets
 
-import "satae66.dev/netzeps2022/network"
+import (
+	"errors"
+)
 
 type DataPacket struct {
-	data []byte
+	header Header
 
-	header network.Header
+	data []byte
 }
 
-func NewDataPacket(header network.Header, data []byte) DataPacket {
+func NewDataPacket(header Header, data []byte) DataPacket {
 	return DataPacket{
 		data:   data,
 		header: header,
 	}
+}
+
+func (p DataPacket) Size() int {
+	return p.header.Size() + len(p.data)
 }
 
 func (p DataPacket) ToBytes() []byte {
@@ -25,4 +31,21 @@ func (p DataPacket) ToBytes() []byte {
 
 func (p DataPacket) GetType() PacketType {
 	return Data
+}
+
+func ParseDataPacket(data []byte) (DataPacket, error) {
+	if len(data) < (DataPacket{}.Size()) {
+		return DataPacket{}, errors.New("not enough data")
+	}
+
+	header, err := ParseHeader(data)
+	if err != nil {
+		return DataPacket{}, err
+	}
+	data = data[Header{}.Size():]
+
+	return DataPacket{
+		header: header,
+		data:   data,
+	}, nil
 }

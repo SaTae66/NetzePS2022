@@ -1,4 +1,4 @@
-package network
+package packets
 
 import (
 	"encoding/binary"
@@ -19,6 +19,10 @@ func NewHeader(sequenceNr uint32, streamUID uint8, packetType uint8) Header {
 	}
 }
 
+func (h Header) Size() int {
+	return 4 + 1 + 1
+}
+
 func (h Header) ToBytes() []byte {
 	raw := make([]byte, 6)
 
@@ -30,8 +34,8 @@ func (h Header) ToBytes() []byte {
 }
 
 func ParseHeader(data []byte) (Header, error) {
-	if len(data) < 6 {
-		return Header{}, errors.New("to few data")
+	if len(data) < (Header{}.Size()) {
+		return Header{}, errors.New("not enough data")
 	}
 
 	return Header{
