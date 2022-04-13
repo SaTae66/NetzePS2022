@@ -12,8 +12,9 @@ type DataPacket struct {
 
 func NewDataPacket(header Header, data []byte) DataPacket {
 	return DataPacket{
-		data:   data,
 		header: header,
+
+		data: data,
 	}
 }
 

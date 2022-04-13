@@ -12,8 +12,9 @@ type FinalizePacket struct {
 
 func NewFinalizePacket(header Header, checksum [16]byte) FinalizePacket {
 	return FinalizePacket{
+		header: header,
+
 		checksum: checksum,
-		header:   header,
 	}
 }
 

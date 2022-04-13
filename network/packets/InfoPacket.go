@@ -14,9 +14,10 @@ type InfoPacket struct {
 
 func NewInfoPacket(header Header, filesize uint64, filename string) InfoPacket {
 	return InfoPacket{
+		header: header,
+
 		filesize: filesize,
 		filename: filename,
-		header:   header,
 	}
 }
 
