@@ -1,3 +1,3 @@
 module satae66.dev/netzeps2022
 
-go 1.17
+go 1.18
