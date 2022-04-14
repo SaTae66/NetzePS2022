@@ -1,52 +1,36 @@
 package packets
 
 import (
+	"bytes"
 	"errors"
+	"satae66.dev/netzeps2022/util"
 )
 
-type FinalizePacket struct {
-	header Header
+const FinalizePacketSize = 16
 
-	checksum [16]byte
+type FinalizePacket struct {
+	Checksum [16]byte
 }
 
-func NewFinalizePacket(header Header, checksum [16]byte) FinalizePacket {
+func NewFinalizePacket(checksum [16]byte) FinalizePacket {
 	return FinalizePacket{
-		header: header,
-
-		checksum: checksum,
+		Checksum: checksum,
 	}
 }
 
-func (p FinalizePacket) Size() int {
-	return p.header.Size() + 16
+func ParseFinalizePacket(r *bytes.Reader) (FinalizePacket, error) {
+	if r.Len() < FinalizePacketSize {
+		return FinalizePacket{}, errors.New("not enough data")
+	}
+	return util.ReadToStruct[FinalizePacket](r)
 }
 
 func (p FinalizePacket) ToBytes() []byte {
-	raw := p.header.ToBytes()
-
-	raw = append(raw, p.checksum[:]...)
-
+	var raw []byte
+	raw = append(raw, p.Checksum[:]...)
 	return raw
 }
 
 func (p FinalizePacket) GetType() PacketType {
 	return Finalize
-}
-
-func ParseFinalizePacket(data []byte) (FinalizePacket, error) {
-	if len(data) < (FinalizePacket{}.Size()) {
-		return FinalizePacket{}, errors.New("not enough data")
-	}
-
-	header, err := ParseHeader(data)
-	if err != nil {
-		return FinalizePacket{}, err
-	}
-	data = data[Header{}.Size():]
-
-	return FinalizePacket{
-		header:   header,
-		checksum: *(*[16]byte)(data),
-	}, nil
 }

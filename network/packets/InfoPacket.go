@@ -1,60 +1,39 @@
 package packets
 
 import (
+	"bytes"
 	"encoding/binary"
 	"errors"
+	"satae66.dev/netzeps2022/util"
 )
 
-type InfoPacket struct {
-	header Header
+const InfoPacketSize = 2
 
-	filesize uint64
-	filename string
+type InfoPacket struct {
+	Filesize uint64
+	Filename string
 }
 
-func NewInfoPacket(header Header, filesize uint64, filename string) InfoPacket {
+func NewInfoPacket(filesize uint64, filename string) InfoPacket {
 	return InfoPacket{
-		header: header,
-
-		filesize: filesize,
-		filename: filename,
+		Filesize: filesize,
+		Filename: filename,
 	}
 }
 
-func (p InfoPacket) Size() int {
-	return p.header.Size() + 8 + len(p.filename)
+func ParseInfoPacket(r *bytes.Reader) (InfoPacket, error) {
+	if r.Len() < InfoPacketSize {
+		return InfoPacket{}, errors.New("not enough data")
+	}
+	return util.ReadToStruct[InfoPacket](r)
 }
 
 func (p InfoPacket) ToBytes() []byte {
-	raw := p.header.ToBytes()
-
-	size := [8]byte{}
-	binary.LittleEndian.PutUint64(size[:], p.filesize)
-	raw = append(raw, size[:]...)
-
-	raw = append(raw, []byte(p.filename)...)
-
-	return raw
+	raw := make([]byte, 8)
+	binary.LittleEndian.PutUint64(raw[:], p.Filesize)
+	return append(raw, []byte(p.Filename)...)
 }
 
 func (p InfoPacket) GetType() PacketType {
 	return Info
-}
-
-func ParseInfoPacket(data []byte) (InfoPacket, error) {
-	if len(data) < (InfoPacket{}.Size()) {
-		return InfoPacket{}, errors.New("not enough data")
-	}
-
-	header, err := ParseHeader(data)
-	if err != nil {
-		return InfoPacket{}, err
-	}
-	data = data[Header{}.Size():]
-
-	return InfoPacket{
-		header:   header,
-		filesize: binary.LittleEndian.Uint64(data[:8]),
-		filename: string(data[8:]),
-	}, nil
 }

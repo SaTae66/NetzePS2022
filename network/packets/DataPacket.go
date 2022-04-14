@@ -1,52 +1,36 @@
 package packets
 
 import (
+	"bytes"
 	"errors"
+	"satae66.dev/netzeps2022/util"
 )
 
-type DataPacket struct {
-	header Header
+const DataPacketSize = 1
 
-	data []byte
+type DataPacket struct {
+	Data []byte
 }
 
-func NewDataPacket(header Header, data []byte) DataPacket {
+func NewDataPacket(data []byte) DataPacket {
 	return DataPacket{
-		header: header,
-
-		data: data,
+		Data: data,
 	}
 }
 
-func (p DataPacket) Size() int {
-	return p.header.Size() + len(p.data)
+func ParseDataPacket(r *bytes.Reader) (DataPacket, error) {
+	if r.Len() < (DataPacketSize) {
+		return DataPacket{}, errors.New("not enough data")
+	}
+	return util.ReadToStruct[DataPacket](r)
 }
 
 func (p DataPacket) ToBytes() []byte {
-	raw := p.header.ToBytes()
-
-	raw = append(raw, p.data...)
-
+	var raw []byte
+	raw = append(raw, p.Data...)
 	return raw
 }
 
 func (p DataPacket) GetType() PacketType {
 	return Data
-}
-
-func ParseDataPacket(data []byte) (DataPacket, error) {
-	if len(data) < (DataPacket{}.Size()) {
-		return DataPacket{}, errors.New("not enough data")
-	}
-
-	header, err := ParseHeader(data)
-	if err != nil {
-		return DataPacket{}, err
-	}
-	data = data[Header{}.Size():]
-
-	return DataPacket{
-		header: header,
-		data:   data,
-	}, nil
 }
