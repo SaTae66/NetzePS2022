@@ -34,6 +34,6 @@ func (p InfoPacket) ToBytes() []byte {
 	return append(raw, []byte(p.Filename)...)
 }
 
-func (p InfoPacket) GetType() PacketType {
+func (p InfoPacket) Type() PacketType {
 	return Info
 }

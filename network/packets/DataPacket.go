@@ -31,6 +31,6 @@ func (p DataPacket) ToBytes() []byte {
 	return raw
 }
 
-func (p DataPacket) GetType() PacketType {
+func (p DataPacket) Type() PacketType {
 	return Data
 }

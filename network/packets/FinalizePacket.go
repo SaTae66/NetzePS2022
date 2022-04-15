@@ -31,6 +31,6 @@ func (p FinalizePacket) ToBytes() []byte {
 	return raw
 }
 
-func (p FinalizePacket) GetType() PacketType {
+func (p FinalizePacket) Type() PacketType {
 	return Finalize
 }
