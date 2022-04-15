@@ -6,6 +6,7 @@ import (
 	"satae66.dev/netzeps2022/util"
 )
 
+// FinalizePacketSize represents the payload size of a FinalizePacket
 const FinalizePacketSize = 16
 
 type FinalizePacket struct {
