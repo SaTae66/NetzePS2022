@@ -10,5 +10,5 @@ const (
 
 type Packet interface {
 	ToBytes() []byte
-	GetType() PacketType
+	Type() PacketType
 }
