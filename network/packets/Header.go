@@ -12,10 +12,10 @@ const HeaderSize = 4 + 1 + 1
 type Header struct {
 	SequenceNr uint32
 	StreamUID  uint8
-	PacketType uint8
+	PacketType PacketType
 }
 
-func NewHeader(sequenceNr uint32, streamUID uint8, packetType uint8) Header {
+func NewHeader(sequenceNr uint32, streamUID uint8, packetType PacketType) Header {
 	return Header{
 		SequenceNr: sequenceNr,
 		StreamUID:  streamUID,
@@ -35,7 +35,7 @@ func (h Header) ToBytes() []byte {
 
 	binary.LittleEndian.PutUint32(raw[:4], h.SequenceNr)
 	raw[4] = h.StreamUID
-	raw[5] = h.PacketType
+	raw[5] = uint8(h.PacketType)
 
 	return raw
 }
