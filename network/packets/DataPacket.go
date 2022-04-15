@@ -3,9 +3,9 @@ package packets
 import (
 	"bytes"
 	"errors"
-	"satae66.dev/netzeps2022/util"
 )
 
+// DataPacketSize represents the minimum payload size of a DataPacket
 const DataPacketSize = 1
 
 type DataPacket struct {
@@ -22,7 +22,9 @@ func ParseDataPacket(r *bytes.Reader) (DataPacket, error) {
 	if r.Len() < (DataPacketSize) {
 		return DataPacket{}, errors.New("not enough data")
 	}
-	return util.ReadToStruct[DataPacket](r)
+	buf := make([]byte, r.Len())
+	_, err := r.Read(buf)
+	return DataPacket{Data: buf}, err
 }
 
 func (p DataPacket) ToBytes() []byte {

@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"satae66.dev/netzeps2022/util"
 )
 
-const InfoPacketSize = 2
+// InfoPacketSize represents the minimum payload size of a InfoPacket
+const InfoPacketSize = 8
 
 type InfoPacket struct {
 	Filesize uint64
@@ -25,7 +25,16 @@ func ParseInfoPacket(r *bytes.Reader) (InfoPacket, error) {
 	if r.Len() < InfoPacketSize {
 		return InfoPacket{}, errors.New("not enough data")
 	}
-	return util.ReadToStruct[InfoPacket](r)
+	buf := make([]byte, r.Len())
+	_, err := r.Read(buf)
+	if err != nil {
+		return InfoPacket{}, err
+	}
+
+	return InfoPacket{
+		Filesize: binary.LittleEndian.Uint64(buf[:8]),
+		Filename: string(buf[8:]),
+	}, nil
 }
 
 func (p InfoPacket) ToBytes() []byte {
