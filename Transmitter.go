@@ -73,6 +73,7 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 	}
 
 	transmission, err := t.newTransmission()
+	defer t.endTransmission(transmission.uid)
 	if err != nil {
 		return err
 	}
