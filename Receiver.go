@@ -1,16 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"github.com/twmb/murmur3"
-	"math/rand"
 	"net"
-	"os"
-	"path"
 	"satae66.dev/netzeps2022/network/packets"
 )
 
@@ -52,7 +47,7 @@ func (r *Receiver) getTransmission(uid uint8) *IncomingTransmission {
 	}
 
 	newTransmission := IncomingTransmission{
-		seqNr:    0,
+		curSeqNr: 0,
 		hash:     murmur3.New128(),
 		receiver: r,
 	}
@@ -84,66 +79,17 @@ func (r *Receiver) ListenMessage() error {
 		if err != nil {
 			return err
 		}
-		if transmission.seqNr != 0 {
-			return errors.New("did not expect info packet")
-		}
-		transmission.filesize = p.Filesize
-		filename := p.Filename
-
-		if filename == "" {
-			goto RandomName
-		}
-		_, err = os.Open(path.Join(r.outpath, filename))
-		if err == nil {
-			goto FoundName
-		}
-
-	RandomName:
-		TRIES := 100
-		for i := 0; i < TRIES; i++ {
-			newFilename := filename + fmt.Sprint(rand.Int())
-			_, err := os.Open(path.Join(r.outpath, filename))
-			if errors.Is(err, os.ErrNotExist) {
-				filename = newFilename
-				goto FoundName
-			}
-		}
-		return errors.New("no suitable filename found")
-
-	FoundName:
-		file, err := os.Create(path.Join(r.outpath))
+		err = transmission.handleInfo(p)
 		if err != nil {
 			return err
 		}
-
-		transmission.file = bufio.NewWriter(file)
 		break
 	case packets.Data:
 		p, err := packets.ParseDataPacket(reader)
 		if err != nil {
 			return err
 		}
-		if h.SequenceNr < transmission.seqNr {
-			//TODO ignore
-		}
-		packetOffset := h.SequenceNr - transmission.seqNr
-		if packetOffset > 10 {
-			return errors.New("packets too much out of order")
-		}
-		if packetOffset != 0 {
-			r.packetBuffer[packetOffset] = p
-			break
-		}
-		_, err = transmission.hash.Write(p.Data)
-		if err != nil {
-			return err
-		}
-
-		_, err = transmission.file.Write(p.Data)
-		if err != nil {
-			return err
-		}
-		err = transmission.file.Flush()
+		err = transmission.handleData(h, p)
 		if err != nil {
 			return err
 		}
@@ -168,7 +114,7 @@ func (r *Receiver) ListenMessage() error {
 
 	//TODO handle packet cache
 
-	transmission.seqNr++
+	transmission.curSeqNr++
 	return nil
 }
 
