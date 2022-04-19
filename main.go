@@ -1,11 +1,8 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
 	"net"
 	"os"
-	"satae66.dev/netzeps2022/network/packets"
 )
 
 func main() {
@@ -15,39 +12,19 @@ func main() {
 		Zone: "",
 	}
 
-	conn, err := net.ListenUDP("udp", &remoteAddr)
+	r, err := NewReceiver(512, "down", 10, &remoteAddr)
 	if err != nil {
 		panic(err)
 	}
 
+	fin := make(chan bool, 1)
+
 	go func() {
-	again:
-		buf := make([]byte, 512)
-		n, _, _, _, err := conn.ReadMsgUDP(buf, nil)
+		err = r.TransferFile()
 		if err != nil {
 			panic(err)
 		}
-		dataReader := bytes.NewReader(buf[:n])
-
-		hdr, err := packets.ParseHeader(dataReader)
-		fmt.Printf("%+v\n", hdr)
-
-		var pkt packets.Packet
-		switch hdr.PacketType {
-		case packets.Info:
-			pkt, err = packets.ParseInfoPacket(dataReader)
-			break
-		case packets.Data:
-			pkt, err = packets.ParseDataPacket(dataReader)
-			break
-		case packets.Finalize:
-			pkt, err = packets.ParseFinalizePacket(dataReader)
-			break
-		}
-
-		fmt.Printf("%+v\n", pkt)
-
-		goto again
+		fin <- true
 	}()
 
 	t, err := NewTransmitter(512)
@@ -65,6 +42,5 @@ func main() {
 		panic(err)
 	}
 
-	var x string
-	_, _ = fmt.Scan(&x)
+	<-fin
 }

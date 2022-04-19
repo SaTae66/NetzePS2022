@@ -7,7 +7,7 @@ import (
 	"satae66.dev/netzeps2022/network/packets"
 )
 
-type Transmission struct {
+type OutgoingTransmission struct {
 	seqNr uint32
 	uid   uint8
 
@@ -17,7 +17,7 @@ type Transmission struct {
 	receiver    *Receiver
 }
 
-func (t *Transmission) sendPacket(header packets.Header, packet packets.Packet) error {
+func (t *OutgoingTransmission) sendPacket(header packets.Header, packet packets.Packet) error {
 	rawData := append(header.ToBytes(), packet.ToBytes()...)
 	if len(rawData) > t.transmitter.maxPacketSize {
 		return errors.New("packet size exceeding limit")
@@ -30,14 +30,14 @@ func (t *Transmission) sendPacket(header packets.Header, packet packets.Packet) 
 	return err
 }
 
-func (t *Transmission) sendInfo(filesize uint64, filename string) error {
+func (t *OutgoingTransmission) sendInfo(filesize uint64, filename string) error {
 	h := packets.NewHeader(t.seqNr, t.uid, packets.Info)
 	p := packets.NewInfoPacket(filesize, filename)
 
 	return t.sendPacket(h, p)
 }
 
-func (t *Transmission) sendData(data []byte) error {
+func (t *OutgoingTransmission) sendData(data []byte) error {
 	h := packets.NewHeader(t.seqNr, t.uid, packets.Data)
 	p := packets.NewDataPacket(data)
 	err := t.sendPacket(h, p)
@@ -53,14 +53,14 @@ func (t *Transmission) sendData(data []byte) error {
 	return nil
 }
 
-func (t *Transmission) sendFinalize(checksum [16]byte) error {
+func (t *OutgoingTransmission) sendFinalize(checksum [16]byte) error {
 	h := packets.NewHeader(t.seqNr, t.uid, packets.Finalize)
 	p := packets.NewFinalizePacket(checksum)
 
 	return t.sendPacket(h, p)
 }
 
-func (t *Transmission) receivePacket() (packets.Header, packets.Packet, error) {
+func (t *OutgoingTransmission) receivePacket() (packets.Header, packets.Packet, error) {
 	buf := make([]byte, t.receiver.maxPacketSize)
 	n, _, _, _, err := t.receiver.conn.ReadMsgUDP(buf, nil)
 

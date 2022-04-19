@@ -1,9 +1,9 @@
 package main
 
 import (
-	"encoding/binary"
 	"errors"
 	"github.com/twmb/murmur3"
+	"io"
 	"net"
 	"os"
 	"satae66.dev/netzeps2022/network/packets"
@@ -27,7 +27,7 @@ func NewTransmitter(maxPacketSize int) (Transmitter, error) {
 	}, nil
 }
 
-func (t *Transmitter) newTransmission() (*Transmission, error) {
+func (t *Transmitter) newTransmission() (*OutgoingTransmission, error) {
 	var uid int
 	var inUse bool
 	for uid = 0; uid < 256; uid++ {
@@ -40,7 +40,7 @@ func (t *Transmitter) newTransmission() (*Transmission, error) {
 		return nil, errors.New("no new transmissions available")
 	}
 
-	newTransmission := Transmission{
+	newTransmission := OutgoingTransmission{
 		seqNr:       0,
 		uid:         uint8(uid),
 		hash:        murmur3.New128(),
@@ -79,15 +79,24 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 		return err
 	}
 
-	err = transmission.sendData([]byte("hello"))
-	if err != nil {
-		return err
+	buf := make([]byte, t.maxPacketSize-packets.HeaderSize)
+	for {
+		n, err := file.Read(buf)
+		if err != nil && err != io.EOF {
+			return err
+		}
+		err = transmission.sendData(buf[:n])
+		if err != nil {
+			return err
+		}
+
+		if n != len(buf) {
+			break
+		}
 	}
 
-	checksum := make([]byte, 16)
-	x1, x2 := transmission.hash.Sum128()
-	binary.LittleEndian.PutUint64(checksum[:8], x1)
-	binary.LittleEndian.PutUint64(checksum[8:], x2)
+	checksum := make([]byte, 0)
+	checksum = transmission.hash.Sum(checksum)
 	err = transmission.sendFinalize(*(*[16]byte)(checksum))
 	if err != nil {
 		return err

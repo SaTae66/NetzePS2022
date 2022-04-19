@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"github.com/twmb/murmur3"
@@ -20,16 +21,16 @@ type IncomingTransmission struct {
 
 	hash murmur3.Hash128
 
-	receiver     *Receiver
-	packetBuffer []packets.Packet
+	receiver       *Receiver
+	packetBuffer   map[uint32]*packets.DataPacket
+	finalizeBuffer map[uint32]*packets.FinalizePacket
 }
 
 func (t *IncomingTransmission) handleInfo(p packets.InfoPacket) error {
-	if t.curSeqNr != 0 {
-		return errors.New("did not expect info packet")
-	}
 	t.filesize = p.Filesize
 	filename := p.Filename
+
+	fmt.Printf("%q\n", p.Filename)
 
 	randomize := false
 	if filename == "" {
@@ -62,7 +63,7 @@ func (t *IncomingTransmission) handleInfo(p packets.InfoPacket) error {
 		}
 	}
 
-	file, err := os.Create(path.Join(t.receiver.outpath))
+	file, err := os.Create(path.Join(t.receiver.outpath, filename))
 	if err != nil {
 		return err
 	}
@@ -72,16 +73,7 @@ func (t *IncomingTransmission) handleInfo(p packets.InfoPacket) error {
 	return nil
 }
 
-func (t *IncomingTransmission) handleData(h packets.Header, p packets.DataPacket) error {
-	//TODO handle seqNr overflow
-	packetOffset := h.SequenceNr - t.curSeqNr
-	if packetOffset > 10 {
-		return errors.New("packets too much out of order")
-	}
-	if packetOffset != 0 {
-		t.receiver.packetBuffer[packetOffset] = p
-		return nil
-	}
+func (t *IncomingTransmission) handleData(p packets.DataPacket) error {
 	_, err := t.hash.Write(p.Data)
 	if err != nil {
 		return err
@@ -92,7 +84,7 @@ func (t *IncomingTransmission) handleData(h packets.Header, p packets.DataPacket
 		return err
 	}
 
-	//TODO buffer more data before flush
+	//TODO buffer more data before flush?
 	err = t.file.Flush()
 	if err != nil {
 		return err
@@ -102,5 +94,15 @@ func (t *IncomingTransmission) handleData(h packets.Header, p packets.DataPacket
 }
 
 func (t *IncomingTransmission) handleFinalize(p packets.FinalizePacket) error {
+	hash := make([]byte, 0)
+	hash = t.hash.Sum(hash)
+
+	expectedHash := p.Checksum[:]
+
+	diff := bytes.Compare(hash, expectedHash)
+	if diff != 0 {
+		return errors.New(fmt.Sprintf("integrity check failed, hashes (%v), (%v) differ by %d", hash, expectedHash, diff))
+	}
+
 	return nil
 }
