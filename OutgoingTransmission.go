@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"github.com/twmb/murmur3"
 	"satae66.dev/netzeps2022/network/packets"
@@ -58,30 +57,4 @@ func (t *OutgoingTransmission) sendFinalize(checksum [16]byte) error {
 	p := packets.NewFinalizePacket(checksum)
 
 	return t.sendPacket(h, p)
-}
-
-func (t *OutgoingTransmission) receivePacket() (packets.Header, packets.Packet, error) {
-	buf := make([]byte, t.receiver.maxPacketSize)
-	n, _, _, _, err := t.receiver.conn.ReadMsgUDP(buf, nil)
-
-	r := bytes.NewReader(buf[:n])
-	h, err := packets.ParseHeader(r)
-	if err != nil {
-		return packets.Header{}, nil, err
-	}
-
-	var p packets.Packet
-	switch h.PacketType {
-	case packets.Info:
-		p, err = packets.ParseInfoPacket(r)
-		break
-	case packets.Data:
-		p, err = packets.ParseDataPacket(r)
-		break
-	case packets.Finalize:
-		p, err = packets.ParseFinalizePacket(r)
-		break
-	}
-
-	return h, p, err
 }
