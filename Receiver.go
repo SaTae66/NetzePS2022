@@ -167,13 +167,13 @@ func (r *Receiver) TransferFile() (err error) {
 }
 
 func (r *Receiver) receivePacket() (*bytes.Reader, error) {
-	buf := make([]byte, r.maxPacketSize)
 	deadline := time.Now().Add(time.Duration(r.timeout) * time.Second)
-	for time.Now().Before(deadline) {
-		fmt.Printf("Listening...\n")
-
-		n, _, _, _, err := r.conn.ReadMsgUDP(buf, nil)
-		return bytes.NewReader(buf[:n]), err
+	err := r.conn.SetReadDeadline(deadline)
+	if err != nil {
+		return nil, err
 	}
-	return nil, errors.New("connection timeout")
+
+	buf := make([]byte, r.maxPacketSize)
+	n, _, _, _, err := r.conn.ReadMsgUDP(buf, nil)
+	return bytes.NewReader(buf[:n]), err
 }

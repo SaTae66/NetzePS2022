@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/twmb/murmur3"
 	"satae66.dev/netzeps2022/network/packets"
+	"time"
 )
 
 type OutgoingTransmission struct {
@@ -17,12 +18,18 @@ type OutgoingTransmission struct {
 }
 
 func (t *OutgoingTransmission) sendPacket(header packets.Header, packet packets.Packet) error {
+	deadline := time.Now().Add(time.Duration(t.receiver.timeout) * time.Second)
+	err := t.receiver.conn.SetWriteDeadline(deadline)
+	if err != nil {
+		return err
+	}
+
 	rawData := append(header.ToBytes(), packet.ToBytes()...)
 	if len(rawData) > t.transmitter.maxPacketSize {
 		return errors.New("packet size exceeding limit")
 	}
 
-	_, _, err := t.transmitter.conn.WriteMsgUDP(rawData, nil, nil)
+	_, _, err = t.transmitter.conn.WriteMsgUDP(rawData, nil, nil)
 	if err == nil {
 		t.seqNr++
 	}
