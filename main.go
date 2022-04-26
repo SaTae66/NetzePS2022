@@ -20,7 +20,7 @@ func main() {
 	fin := make(chan bool, 1)
 
 	go func() {
-		err = r.TransferFile()
+		err = r.ReceiverFile()
 		if err != nil {
 			panic(err)
 		}

@@ -66,7 +66,7 @@ func (r *Receiver) endTransmission(uid uint8) {
 	r.transmissions[uid] = nil
 }
 
-func (r *Receiver) TransferFile() (err error) {
+func (r *Receiver) ReceiverFile() (err error) {
 	defer func(err error) {
 		if err == nil {
 			return
@@ -163,7 +163,7 @@ func (r *Receiver) TransferFile() (err error) {
 		return transmission.handleFinalize(*f)
 	}
 
-	return r.TransferFile()
+	return r.ReceiverFile()
 }
 
 func (r *Receiver) receivePacket() (*bytes.Reader, error) {
