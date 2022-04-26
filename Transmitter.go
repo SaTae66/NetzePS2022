@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"satae66.dev/netzeps2022/network/packets"
+	"time"
 )
 
 type Transmitter struct {
@@ -93,6 +94,8 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 		if n != len(buf) {
 			break
 		}
+
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	checksum := make([]byte, 0)
