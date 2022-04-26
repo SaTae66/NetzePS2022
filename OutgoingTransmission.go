@@ -14,12 +14,11 @@ type OutgoingTransmission struct {
 	hash murmur3.Hash128
 
 	transmitter *Transmitter
-	receiver    *Receiver
 }
 
 func (t *OutgoingTransmission) sendPacket(header packets.Header, packet packets.Packet) error {
-	deadline := time.Now().Add(time.Duration(t.receiver.timeout) * time.Second)
-	err := t.receiver.conn.SetWriteDeadline(deadline)
+	deadline := time.Now().Add(time.Duration(t.transmitter.timeout) * time.Second)
+	err := t.transmitter.conn.SetWriteDeadline(deadline)
 	if err != nil {
 		return err
 	}

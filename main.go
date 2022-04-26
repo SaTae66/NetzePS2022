@@ -27,7 +27,7 @@ func main() {
 		fin <- true
 	}()
 
-	t, err := NewTransmitter(512)
+	t, err := NewTransmitter(512, 10)
 	if err != nil {
 		panic(err)
 	}

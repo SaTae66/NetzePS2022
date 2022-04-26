@@ -14,16 +14,20 @@ type Transmitter struct {
 	conn *net.UDPConn
 
 	maxPacketSize int
+	timeout       int
+
 	transmissions map[uint8]bool
 }
 
-func NewTransmitter(maxPacketSize int) (Transmitter, error) {
+func NewTransmitter(maxPacketSize int, timeout int) (Transmitter, error) {
 	if maxPacketSize < packets.HeaderSize+1 {
 		return Transmitter{}, errors.New("maxPacketSize must be at least HeaderSize+1")
 	}
 
 	return Transmitter{
 		maxPacketSize: maxPacketSize,
+		timeout:       timeout,
+
 		transmissions: make(map[uint8]bool, 0),
 	}, nil
 }
