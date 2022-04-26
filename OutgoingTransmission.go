@@ -13,6 +13,8 @@ type OutgoingTransmission struct {
 
 	hash murmur3.Hash128
 
+	bytesSent float64
+
 	transmitter *Transmitter
 }
 

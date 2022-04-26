@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/twmb/murmur3"
 	"io"
 	"net"
@@ -84,6 +85,20 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 		return err
 	}
 
+	fin := make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case <-fin:
+				return
+			default:
+				fmt.Printf("%f%s\r", transmission.bytesSent/float64(fInfo.Size())*100, "%")
+				time.Sleep(5 * time.Second)
+			}
+		}
+	}()
+	defer func() { fin <- true }()
+
 	buf := make([]byte, t.maxPacketSize-packets.HeaderSize)
 	for {
 		n, err := file.Read(buf)
@@ -95,15 +110,16 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 			return err
 		}
 
+		transmission.bytesSent += float64(n)
+
 		if n != len(buf) {
 			break
 		}
 
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Microsecond)
 	}
 
-	checksum := make([]byte, 0)
-	checksum = transmission.hash.Sum(checksum)
+	checksum := transmission.hash.Sum(nil)
 	err = transmission.sendFinalize(*(*[16]byte)(checksum))
 	if err != nil {
 		return err
