@@ -129,10 +129,13 @@ func (r *Receiver) ReceiverFile() (err error) {
 			return err
 		}
 		if h.SequenceNr != transmission.curSeqNr {
-			if len(transmission.finalizeBuffer) >= 1 {
-				return errors.New("finalizeBuffer overflow")
+			if transmission.finalizeBuffer.FinalizePacket != nil {
+				return errors.New("received multiple finalize packets")
 			}
-			transmission.finalizeBuffer[h.SequenceNr] = &p
+			transmission.finalizeBuffer = struct {
+				*packets.Header
+				*packets.FinalizePacket
+			}{Header: &h, FinalizePacket: &p}
 			break
 		}
 		err = transmission.handleFinalize(p)
@@ -157,10 +160,11 @@ func (r *Receiver) ReceiverFile() (err error) {
 		transmission.curSeqNr++
 	}
 
-	f := transmission.finalizeBuffer[transmission.curSeqNr]
-	// what if curSeqNr = SeqNr of Packet before Overflow and Finalize is due to in 1 SeqNr cycle
-	if f != nil {
-		return transmission.handleFinalize(*f)
+	if transmission.finalizeBuffer.Header != nil && transmission.curSeqNr == transmission.finalizeBuffer.Header.SequenceNr {
+		f := transmission.finalizeBuffer.FinalizePacket
+		if f != nil {
+			return transmission.handleFinalize(*f)
+		}
 	}
 
 	return r.ReceiverFile()
@@ -175,5 +179,9 @@ func (r *Receiver) receivePacket() (*bytes.Reader, error) {
 
 	buf := make([]byte, r.maxPacketSize)
 	n, _, _, _, err := r.conn.ReadMsgUDP(buf, nil)
-	return bytes.NewReader(buf[:n]), err
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes.NewReader(buf[:n]), nil
 }

@@ -23,14 +23,15 @@ type IncomingTransmission struct {
 
 	receiver       *Receiver
 	packetBuffer   map[uint32]*packets.DataPacket
-	finalizeBuffer map[uint32]*packets.FinalizePacket
+	finalizeBuffer struct {
+		*packets.Header
+		*packets.FinalizePacket
+	}
 }
 
 func (t *IncomingTransmission) handleInfo(p packets.InfoPacket) error {
 	t.filesize = p.Filesize
 	filename := p.Filename
-
-	fmt.Printf("%q\n", p.Filename)
 
 	randomize := false
 	if filename == "" {
