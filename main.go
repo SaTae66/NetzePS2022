@@ -165,13 +165,13 @@ func handleCommand(args []string) error {
 }
 
 func main() {
-	totalSize := uint64(1000000) // bytes
-	totalSent := uint64(500000)  // bytes
-	timeElapsed := 250           // seconds
+	totalSize := uint64(10000) // bytes
+	totalSent := uint64(3000)  // bytes
+	timeElapsed := 1           // seconds
 
-	progress := int(totalSent / totalSize * 100)       // percent
-	speed := uint32(totalSent) / uint32(timeElapsed)   // bytes/second
-	secLeft := (totalSize - totalSent) / uint64(speed) // seconds
+	progress := int(float64(totalSent) / float64(totalSize) * 100) // percent
+	speed := uint32(totalSent / uint64(timeElapsed))               // bytes/second
+	secLeft := (totalSize - totalSent) / uint64(speed)             // seconds
 	eta, err := time.ParseDuration(fmt.Sprintf("%ds", secLeft))
 	if err != nil {
 		return
