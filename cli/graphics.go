@@ -11,18 +11,19 @@ const (
 )
 
 type InfoLine struct {
-	id       string
-	progress string
-	speed    string
-	eta      string
+	Id       string
+	Progress string
+	Speed    string
+	Eta      string
 }
 
 func NewInfoLine(id string, progress string, speed string, eta string) InfoLine {
+
 	return InfoLine{
-		id:       id,
-		progress: progress,
-		speed:    speed,
-		eta:      eta,
+		Id:       id,
+		Progress: progress,
+		Speed:    speed,
+		Eta:      eta,
 	}
 }
 
@@ -30,13 +31,13 @@ func (l *InfoLine) print() {
 	line := strings.Builder{}
 
 	line.WriteString(vertical)
-	line.WriteString(fmt.Sprintf(" %s ", l.id))
+	line.WriteString(fmt.Sprintf(" %s ", l.Id))
 	line.WriteString(vertical)
-	line.WriteString(fmt.Sprintf(" %s ", l.progress))
+	line.WriteString(fmt.Sprintf(" %s ", l.Progress))
 	line.WriteString(vertical)
-	line.WriteString(fmt.Sprintf(" %s ", l.speed))
+	line.WriteString(fmt.Sprintf(" %s ", l.Speed))
 	line.WriteString(vertical)
-	line.WriteString(fmt.Sprintf(" %s ", l.eta))
+	line.WriteString(fmt.Sprintf(" %s ", l.Eta))
 	line.WriteString(vertical)
 
 	fmt.Printf("%s\n", line.String())
@@ -46,8 +47,8 @@ func Draw(lines []*InfoLine) {
 	printHeader()
 	for _, line := range lines {
 		line.print()
+		printFooter()
 	}
-	printFooter()
 }
 
 func printHeader() {
