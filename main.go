@@ -164,6 +164,7 @@ func handleCommand(args []string) error {
 }
 
 func main() {
-	x := cli.NewInfoLine("001", "  70% [______/|||]", "100kB/s", "15min 17sec")
-	cli.Draw([]*cli.InfoLine{&x})
+	x := cli.NewInfoLine(1, 70, "100kB/s", "15min 17sec")
+	y := cli.NewInfoLine(2, 35, " 25MB/s", " 1min 23sec")
+	cli.Draw([]*cli.InfoLine{x, y})
 }
