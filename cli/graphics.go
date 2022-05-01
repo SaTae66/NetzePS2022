@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 const (
@@ -11,14 +12,14 @@ const (
 )
 
 type InfoLine struct {
-	Id       int
-	Progress int
-	Speed    string
-	Eta      string
+	Id       uint8         // uid of the stream
+	Progress int           // progress of the stream in percent
+	Speed    uint32        // speed of the stream in bytes/second
+	Eta      time.Duration // duration after which the steam is expected to be finished
 }
 
-func NewInfoLine(id int, progress int, speed string, eta string) *InfoLine {
-	if id < 0 || id > 999 {
+func NewInfoLine(id uint8, progress int, speed uint32, eta time.Duration) *InfoLine {
+	if id < 0 {
 		return nil
 	}
 	if progress < 0 || progress > 100 {
@@ -41,9 +42,9 @@ func (l *InfoLine) print() {
 	line.WriteString(vertical)
 	line.WriteString(fmt.Sprintf(" %3d%%  [%-10s] ", l.Progress, strings.Repeat("#", l.Progress/10)))
 	line.WriteString(vertical)
-	line.WriteString(fmt.Sprintf(" %s ", l.Speed))
+	line.WriteString(fmt.Sprintf(" %dKBs ", l.Speed))
 	line.WriteString(vertical)
-	line.WriteString(fmt.Sprintf(" %s ", l.Eta))
+	line.WriteString(fmt.Sprintf(" %11s ", l.Eta))
 	line.WriteString(vertical)
 
 	fmt.Printf("%s\n", line.String())

@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"satae66.dev/netzeps2022/cli"
+	"time"
 )
 
 type Command interface {
@@ -164,7 +165,18 @@ func handleCommand(args []string) error {
 }
 
 func main() {
-	x := cli.NewInfoLine(1, 70, "100kB/s", "15min 17sec")
-	y := cli.NewInfoLine(2, 35, " 25MB/s", " 1min 23sec")
-	cli.Draw([]*cli.InfoLine{x, y})
+	totalSize := uint64(1000000) // bytes
+	totalSent := uint64(500000)  // bytes
+	timeElapsed := 250           // seconds
+
+	progress := int(totalSent / totalSize * 100)       // percent
+	speed := uint32(totalSent) / uint32(timeElapsed)   // bytes/second
+	secLeft := (totalSize - totalSent) / uint64(speed) // seconds
+	eta, err := time.ParseDuration(fmt.Sprintf("%ds", secLeft))
+	if err != nil {
+		return
+	}
+
+	x := cli.NewInfoLine(1, progress, speed, eta)
+	cli.Draw([]*cli.InfoLine{x})
 }
