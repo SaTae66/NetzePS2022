@@ -7,10 +7,10 @@ import (
 )
 
 type InfoLine struct {
-	Id       uint8  // uid of the stream
-	Progress int    // progress of the stream in percent
-	Speed    string // speed of the stream in bytes/second
-	Eta      string // duration after which the steam is expected to be finished
+	id       uint8  // uid of the stream
+	progress int    // progress of the stream in percent
+	speed    string // speed of the stream in bytes/second
+	eta      string // duration after which the steam is expected to be finished
 }
 
 func NewInfoLine(id uint8, progress int, speed uint32, eta time.Duration) *InfoLine {
@@ -22,10 +22,10 @@ func NewInfoLine(id uint8, progress int, speed uint32, eta time.Duration) *InfoL
 	}
 
 	return &InfoLine{
-		Id:       id,
-		Progress: progress,
-		Speed:    parseSpeed(speed),
-		Eta:      parseEta(eta),
+		id:       id,
+		progress: progress,
+		speed:    parseSpeed(speed),
+		eta:      parseEta(eta),
 	}
 }
 
@@ -57,13 +57,13 @@ func (l *InfoLine) print() {
 	line := strings.Builder{}
 
 	line.WriteString(vertical)
-	line.WriteString(fmt.Sprintf(" %03d ", l.Id))
+	line.WriteString(fmt.Sprintf(" %03d ", l.id))
 	line.WriteString(vertical)
-	line.WriteString(fmt.Sprintf(" %3d%%  [%-10s] ", l.Progress, strings.Repeat("#", l.Progress/10)))
+	line.WriteString(fmt.Sprintf(" %3d%%  [%-10s] ", l.progress, strings.Repeat("#", l.progress/10)))
 	line.WriteString(vertical)
-	line.WriteString(fmt.Sprintf(" %s ", l.Speed))
+	line.WriteString(fmt.Sprintf(" %s ", l.speed))
 	line.WriteString(vertical)
-	line.WriteString(fmt.Sprintf(" %11s ", l.Eta))
+	line.WriteString(fmt.Sprintf(" %11s ", l.eta))
 	line.WriteString(vertical)
 
 	fmt.Printf("%s\n", line.String())
