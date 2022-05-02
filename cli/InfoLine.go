@@ -17,16 +17,20 @@ func NewInfoLine(id uint8, progress int, speed uint32, eta time.Duration) *InfoL
 	if id < 0 {
 		return nil
 	}
-	if progress < 0 || progress > 100 {
-		return nil
-	}
 
 	return &InfoLine{
 		id:       id,
-		progress: progress,
+		progress: parseProgress(progress),
 		speed:    parseSpeed(speed),
 		eta:      parseEta(eta),
 	}
+}
+
+func parseProgress(progress int) int {
+	if progress < 0 || progress > 100 {
+		return 0
+	}
+	return progress
 }
 
 func parseSpeed(speed uint32) string {
@@ -51,6 +55,12 @@ func parseSpeed(speed uint32) string {
 
 func parseEta(eta time.Duration) string {
 	return fmt.Sprintf("%s", eta)
+}
+
+func (l *InfoLine) UpdateValues(progress int, speed uint32, eta time.Duration) {
+	l.progress = parseProgress(progress)
+	l.speed = parseSpeed(speed)
+	l.eta = parseEta(eta)
 }
 
 func (l *InfoLine) print() {
