@@ -4,6 +4,8 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net"
+	"os"
 	"satae66.dev/netzeps2022/cli"
 	"time"
 )
@@ -179,4 +181,33 @@ func main() {
 
 	x := cli.NewInfoLine(1, progress, speed, eta)
 	cli.Draw([]*cli.InfoLine{x})
+
+	remoteAddr := &net.UDPAddr{
+		IP:   net.ParseIP("localhost"),
+		Port: 6969,
+		Zone: "",
+	}
+
+	r, err := NewReceiverNEW(512, 10, 10000, nil)
+	if err != nil {
+		panic(err)
+	}
+	fin := make(chan bool, 1)
+	go func() {
+		err = r.Start()
+		if err != nil {
+			panic(err)
+		}
+		fin <- true
+	}()
+
+	t, err := NewTransmitter(512, 10)
+	if err != nil {
+		panic(err)
+	}
+	f, err := os.Open("data.txt")
+	err = t.SendFileTo(f, remoteAddr)
+	if err != nil {
+		panic(err)
+	}
 }

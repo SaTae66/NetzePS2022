@@ -1,12 +1,16 @@
 package main
 
 import (
+	"bufio"
 	"github.com/twmb/murmur3"
+	"net"
 	"time"
 )
 
 type Transmission struct {
-	seqNr uint32 // sequence-number of the next transmitted packet
+	seqNr     uint32           // sequence-number of the next transmitted packet
+	networkIO net.UDPConn      // udp connection of the transmission
+	fileIO    bufio.ReadWriter // buffered filesystem ReadWriter of the transmission
 
 	transmittedSize uint64 // size of the already transmitted data
 	totalSize       uint64 // total size of the file that is to be transmitted
