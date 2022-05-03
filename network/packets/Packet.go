@@ -8,16 +8,6 @@ const (
 	Finalize            = 0xFF
 )
 
-type DataPacketAndHeader struct {
-	Header Header
-	Packet DataPacket
-}
-
-type FinalizePacketAndHeader struct {
-	Header Header
-	Packet FinalizePacket
-}
-
 type Packet interface {
 	ToBytes() []byte
 	Type() PacketType
