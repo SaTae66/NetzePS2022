@@ -75,6 +75,8 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 		return err
 	}
 
+	transmission.totalSize = uint64(fInfo.Size())
+
 	t.conn, err = net.DialUDP("udp", nil, addr)
 	if err != nil {
 		return err
@@ -92,7 +94,7 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 			case <-fin:
 				return
 			default:
-				fmt.Printf("%f%s\r", transmission.bytesSent/float64(fInfo.Size())*100, "%")
+				fmt.Printf("%f%s\r", float64(transmission.bytesSent)/float64(fInfo.Size())*100, "%")
 				time.Sleep(5 * time.Second)
 			}
 		}
@@ -110,9 +112,9 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 			return err
 		}
 
-		transmission.bytesSent += float64(n)
+		transmission.bytesSent += uint64(n)
 
-		if n != len(buf) {
+		if transmission.bytesSent == transmission.totalSize {
 			break
 		}
 
