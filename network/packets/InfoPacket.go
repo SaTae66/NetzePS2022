@@ -10,6 +10,8 @@ import (
 const InfoPacketSize = 8
 
 type InfoPacket struct {
+	Header
+
 	Filesize uint64
 	Filename string
 }

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"satae66.dev/netzeps2022/util"
 )
 
 const HeaderSize = 4 + 1 + 1
@@ -24,13 +23,30 @@ func NewHeader(sequenceNr uint32, streamUID uint8, packetType PacketType) Header
 }
 
 func ParseHeader(r *bytes.Reader) (Header, error) {
-	if r.Len() < HeaderSize {
+	data := make([]byte, HeaderSize)
+	n, err := r.Read(data)
+	if err != nil {
+		return Header{}, err
+	}
+
+	if n < HeaderSize {
 		return Header{}, errors.New("not enough data")
 	}
-	return util.ReadToStruct[Header](r)
+
+	return Header{
+		SequenceNr: binary.LittleEndian.Uint32(data[:4]),
+		StreamUID:  data[4],
+		PacketType: PacketType(data[5]),
+	}, nil
 }
 
-func (h Header) ToBytes() []byte {
+func (h *Header) SetHeader(data Header) {
+	h.StreamUID = data.StreamUID
+	h.SequenceNr = data.SequenceNr
+	h.PacketType = data.PacketType
+}
+
+func (h *Header) ToBytes() []byte {
 	raw := make([]byte, HeaderSize)
 
 	binary.LittleEndian.PutUint32(raw[:4], h.SequenceNr)

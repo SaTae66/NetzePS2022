@@ -2,13 +2,14 @@ package packets
 
 import (
 	"bytes"
-	"errors"
 )
 
 // DataPacketSize represents the minimum payload size of a DataPacket
 const DataPacketSize = 1
 
 type DataPacket struct {
+	Header
+
 	Data []byte
 }
 
@@ -19,9 +20,6 @@ func NewDataPacket(data []byte) DataPacket {
 }
 
 func ParseDataPacket(r *bytes.Reader) (DataPacket, error) {
-	if r.Len() < (DataPacketSize) {
-		return DataPacket{}, errors.New("not enough data")
-	}
 	buf := make([]byte, r.Len())
 	_, err := r.Read(buf)
 	return DataPacket{Data: buf}, err
