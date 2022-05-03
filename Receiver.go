@@ -20,7 +20,7 @@ type ReceiverSettings struct {
 	outPath        string        // path of directory in which to store transmissions
 }
 
-type ReceiverNEW struct {
+type Receiver struct {
 	settings ReceiverSettings
 
 	keepRunning bool
@@ -29,7 +29,7 @@ type ReceiverNEW struct {
 	transmissions map[uint8]*TransmissionIN
 }
 
-func NewReceiverNEW(maxPacketSize int, networkTimeout int, bufferLimit int, outPath string, addr *net.UDPAddr) (*ReceiverNEW, error) {
+func NewReceiver(maxPacketSize int, networkTimeout int, bufferLimit int, outPath string, addr *net.UDPAddr) (*Receiver, error) {
 	if maxPacketSize < packets.HeaderSize+1 {
 		return nil, errors.New("maxPacketSize must be at least the size of the header +1")
 	}
@@ -45,7 +45,7 @@ func NewReceiverNEW(maxPacketSize int, networkTimeout int, bufferLimit int, outP
 		return nil, err
 	}
 
-	return &ReceiverNEW{
+	return &Receiver{
 		settings: ReceiverSettings{
 			maxPacketSize:  maxPacketSize,
 			networkTimeout: time.Duration(networkTimeout) * time.Second,
@@ -57,7 +57,7 @@ func NewReceiverNEW(maxPacketSize int, networkTimeout int, bufferLimit int, outP
 	}, nil
 }
 
-func (r *ReceiverNEW) Start(status chan error) {
+func (r *Receiver) Start(status chan error) {
 	r.keepRunning = true
 
 	go func() {
@@ -83,11 +83,11 @@ func (r *ReceiverNEW) Start(status chan error) {
 	}()
 }
 
-func (r *ReceiverNEW) Stop() {
+func (r *Receiver) Stop() {
 	r.keepRunning = false
 }
 
-func (r *ReceiverNEW) getTransmission(uid uint8) *TransmissionIN {
+func (r *Receiver) getTransmission(uid uint8) *TransmissionIN {
 	incomingTransmission := r.transmissions[uid]
 	if incomingTransmission != nil {
 		return incomingTransmission
@@ -113,11 +113,11 @@ func (r *ReceiverNEW) getTransmission(uid uint8) *TransmissionIN {
 	return &newTransmission
 }
 
-func (r *ReceiverNEW) removeTransmission(uid uint8) {
+func (r *Receiver) removeTransmission(uid uint8) {
 	delete(r.transmissions, uid)
 }
 
-func (r *ReceiverNEW) nextUDPMessage() (*bytes.Reader, error) {
+func (r *Receiver) nextUDPMessage() (*bytes.Reader, error) {
 	rawBytes := make([]byte, r.settings.maxPacketSize)
 	n, _, _, _, err := r.conn.ReadMsgUDP(rawBytes, nil)
 	if err != nil {
@@ -127,7 +127,7 @@ func (r *ReceiverNEW) nextUDPMessage() (*bytes.Reader, error) {
 	return bytes.NewReader(rawBytes[:n]), nil
 }
 
-func (r *ReceiverNEW) handlePacket(header packets.Header, udpMessage *bytes.Reader) (err error) {
+func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader) (err error) {
 	transmission := r.getTransmission(header.StreamUID)
 	defer func() {
 		if err != nil {
@@ -192,7 +192,7 @@ func (r *ReceiverNEW) handlePacket(header packets.Header, udpMessage *bytes.Read
 	return nil
 }
 
-func (r *ReceiverNEW) handleInfo(p packets.InfoPacket, t *TransmissionIN) error {
+func (r *Receiver) handleInfo(p packets.InfoPacket, t *TransmissionIN) error {
 	t.startTime = time.Now()
 	t.timeout = time.After(r.settings.networkTimeout * time.Second)
 
@@ -206,7 +206,7 @@ func (r *ReceiverNEW) handleInfo(p packets.InfoPacket, t *TransmissionIN) error 
 	return nil
 }
 
-func (r *ReceiverNEW) handleData(p packets.DataPacket, t *TransmissionIN) error {
+func (r *Receiver) handleData(p packets.DataPacket, t *TransmissionIN) error {
 	_, err := t.fileIO.Write(p.Data)
 	if err != nil {
 		return err
@@ -226,7 +226,7 @@ func (r *ReceiverNEW) handleData(p packets.DataPacket, t *TransmissionIN) error 
 	return nil
 }
 
-func (r *ReceiverNEW) handleFinalize(p packets.FinalizePacket, t *TransmissionIN) error {
+func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *TransmissionIN) error {
 	actualHash := make([]byte, 0)
 	actualHash = t.hash.Sum(actualHash)
 
@@ -243,7 +243,7 @@ func (r *ReceiverNEW) handleFinalize(p packets.FinalizePacket, t *TransmissionIN
 	return nil
 }
 
-func (r *ReceiverNEW) handleBuffer(t *TransmissionIN) error {
+func (r *Receiver) handleBuffer(t *TransmissionIN) error {
 	for p, exists := t.buffer[t.seqNr]; exists; {
 		err := r.handlePacket(p.Header, bytes.NewReader(p.Data))
 		if err != nil {
@@ -263,7 +263,7 @@ func (r *ReceiverNEW) handleBuffer(t *TransmissionIN) error {
 	return nil
 }
 
-func (r *ReceiverNEW) initFileIO(filePath string, t *TransmissionIN) error {
+func (r *Receiver) initFileIO(filePath string, t *TransmissionIN) error {
 	_, err := os.Open(filePath)
 	if os.IsExist(err) {
 		return errors.New("file already exists at specified path")
