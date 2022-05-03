@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"satae66.dev/netzeps2022/cli"
-	"time"
 )
 
 type Command interface {
@@ -167,38 +165,42 @@ func handleCommand(args []string) error {
 }
 
 func main() {
-	totalSize := uint64(10000) // bytes
-	totalSent := uint64(3000)  // bytes
-	timeElapsed := 1           // seconds
+	/*
+		totalSize := uint64(10000) // bytes
+		totalSent := uint64(3000)  // bytes
+		timeElapsed := 1           // seconds
 
-	progress := int(float64(totalSent) / float64(totalSize) * 100) // percent
-	speed := uint32(totalSent / uint64(timeElapsed))               // bytes/second
-	secLeft := (totalSize - totalSent) / uint64(speed)             // seconds
-	eta, err := time.ParseDuration(fmt.Sprintf("%ds", secLeft))
-	if err != nil {
-		return
-	}
+		progress := int(float64(totalSent) / float64(totalSize) * 100) // percent
+		speed := uint32(totalSent / uint64(timeElapsed))               // bytes/second
+		secLeft := (totalSize - totalSent) / uint64(speed)             // seconds
+		eta, err := time.ParseDuration(fmt.Sprintf("%ds", secLeft))
+		if err != nil {
+			return
+		}
 
-	x := cli.NewInfoLine(1, progress, speed, eta)
-	cli.Draw([]*cli.InfoLine{x})
+		x := cli.NewInfoLine(1, progress, speed, eta)
+		cli.Draw([]*cli.InfoLine{x})
+
+	*/
 
 	remoteAddr := &net.UDPAddr{
-		IP:   net.ParseIP("localhost"),
+		IP:   net.ParseIP("127.0.0.1"),
 		Port: 6969,
 		Zone: "",
 	}
 
-	r, err := NewReceiverNEW(512, 10, 10000, nil)
+	r, err := NewReceiverNEW(512, 10, 1000, "./down/", remoteAddr)
 	if err != nil {
 		panic(err)
 	}
-	fin := make(chan bool, 1)
+
+	errorChannel := make(chan error, 10)
+	r.Start(errorChannel)
+
 	go func() {
-		err = r.Start()
-		if err != nil {
-			panic(err)
+		for {
+			fmt.Printf("%s\n", <-errorChannel)
 		}
-		fin <- true
 	}()
 
 	t, err := NewTransmitter(512, 10)
@@ -210,4 +212,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	fin := make(chan bool, 1)
+	<-fin
 }
