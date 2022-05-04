@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"net"
-	"os"
 )
 
 type Command interface {
@@ -184,12 +183,13 @@ func main() {
 	*/
 
 	remoteAddr := &net.UDPAddr{
-		IP:   net.ParseIP("127.0.0.1"),
+		IP: net.ParseIP("localhost"),
+		//IP:   net.ParseIP("10.3.3.50"),
 		Port: 6969,
 		Zone: "",
 	}
 
-	r, err := NewReceiverNEW(512, 10, 1000, "./down/", remoteAddr)
+	r, err := NewReceiver(1406, 10, 100000, "./down/", remoteAddr)
 	if err != nil {
 		panic(err)
 	}
@@ -203,15 +203,18 @@ func main() {
 		}
 	}()
 
-	t, err := NewTransmitter(512, 10)
-	if err != nil {
-		panic(err)
-	}
-	f, err := os.Open("data.txt")
-	err = t.SendFileTo(f, remoteAddr)
-	if err != nil {
-		panic(err)
-	}
+	/*
+		t, err := NewTransmitter(1406, 10)
+		if err != nil {
+			panic(err)
+		}
+		f, err := os.Open("dummy.random")
+		err = t.SendFileTo(f, remoteAddr)
+		if err != nil {
+			panic(err)
+		}
+
+	*/
 
 	fin := make(chan bool, 1)
 	<-fin

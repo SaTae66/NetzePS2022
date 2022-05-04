@@ -129,10 +129,12 @@ func (r *Receiver) nextUDPMessage() (*bytes.Reader, error) {
 
 func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader) (err error) {
 	transmission := r.getTransmission(header.StreamUID)
+
 	defer func() {
 		if err != nil {
 			r.removeTransmission(transmission.uid)
 		}
+		transmission.seqNr++
 	}()
 
 	switch header.PacketType {
@@ -148,7 +150,6 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader)
 		if err != nil {
 			return err
 		}
-		transmission.seqNr++
 		break
 	case packets.Data:
 		dataPacket, err := packets.ParseDataPacket(udpMessage)
@@ -167,7 +168,6 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader)
 		if err != nil {
 			return err
 		}
-		transmission.seqNr++
 		break
 	case packets.Finalize:
 		finalizePacket, err := packets.ParseFinalizePacket(udpMessage)
@@ -183,7 +183,6 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader)
 		if err != nil {
 			return err
 		}
-		transmission.seqNr++
 		break
 	default:
 		return fmt.Errorf("packet with header %v malformed; expected data or finalize packet", header)
@@ -193,6 +192,8 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader)
 }
 
 func (r *Receiver) handleInfo(p packets.InfoPacket, t *TransmissionIN) error {
+	fmt.Printf("started transmission: %d\n", time.Now().UnixMilli())
+
 	t.startTime = time.Now()
 	t.timeout = time.After(r.settings.networkTimeout * time.Second)
 
@@ -239,7 +240,7 @@ func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *TransmissionIN) e
 
 	_ = t.fileIO.Flush()
 	r.removeTransmission(t.uid)
-	fmt.Printf("successfully transfered file\n")
+	fmt.Printf("finished transmission: %d\n", time.Now().UnixMilli())
 	return nil
 }
 
