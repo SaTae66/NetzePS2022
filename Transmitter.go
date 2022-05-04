@@ -87,7 +87,7 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 		return err
 	}
 
-	fmt.Printf("started transmission: %d\n", time.Now().UnixMilli())
+	fmt.Printf("started sending transmission(%d): %d\n", transmission.uid, time.Now().UnixMilli())
 
 	fin := make(chan bool, 1)
 	go func() {
@@ -129,7 +129,7 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 		return err
 	}
 
-	fmt.Printf("finished transmission: %d\n", time.Now().UnixMilli())
+	fmt.Printf("finished sending transmission(%d): %d\n", transmission.uid, time.Now().UnixMilli())
 
 	return nil
 }

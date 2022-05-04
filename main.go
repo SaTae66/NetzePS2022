@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"os"
 )
 
 type Command interface {
@@ -203,18 +204,15 @@ func main() {
 		}
 	}()
 
-	/*
-		t, err := NewTransmitter(1406, 10)
-		if err != nil {
-			panic(err)
-		}
-		f, err := os.Open("dummy.random")
-		err = t.SendFileTo(f, remoteAddr)
-		if err != nil {
-			panic(err)
-		}
-
-	*/
+	t, err := NewTransmitter(1406, 10)
+	if err != nil {
+		panic(err)
+	}
+	f, err := os.Open("dummy.random")
+	err = t.SendFileTo(f, remoteAddr)
+	if err != nil {
+		panic(err)
+	}
 
 	fin := make(chan bool, 1)
 	<-fin
