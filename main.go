@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"flag"
 	"fmt"
 	"net"
+	"os"
+	"satae66.dev/netzeps2022/cli"
+	"satae66.dev/netzeps2022/core"
 )
 
 type Command interface {
@@ -49,7 +53,7 @@ func (cmd *DefaultCommand) SetDefaultFlags(fs *flag.FlagSet) {
 	fs.IntVar(&cmd.localPort, "lPort", 6969, "Local port [default = 6969]")
 
 	fs.IntVar(&cmd.maxPacketSize, "packetSize", 512, "Maximum size of a single packet [default = 512]")
-	fs.IntVar(&cmd.connectionTimeout, "timeout", 10, "Timeout of the connection in seconds [default = 10]")
+	fs.IntVar(&cmd.connectionTimeout, "timeout", 10, "LastUpdated of the connection in seconds [default = 10]")
 
 	fs.BoolVar(&cmd.debug, "debug", false, "Toggle debug mode (dumps log for every transmission)")
 }
@@ -163,11 +167,18 @@ func handleCommand(args []string) error {
 	return fmt.Errorf("unknown command: %s", selectedCommand)
 }
 
+var log *bufio.Writer
+
 func main() {
+	logFile, err := os.OpenFile("go_log.txt", os.O_CREATE, 0755)
+	if err != nil {
+		panic(err)
+	}
+	log = bufio.NewWriter(logFile)
 
 	remoteAddr := &net.UDPAddr{
 		IP: net.ParseIP("localhost"),
-		//IP:   net.ParseIP("10.3.3.50"),
+		//IP:   net.ParseIP("10.168.239.159"),
 		Port: 6969,
 		Zone: "",
 	}
@@ -178,26 +189,28 @@ func main() {
 		panic(err)
 	}
 
-	/*
-		// CLI
-		x, err := cli.NewCliWorker(1, &r.transmissions)
-		if err != nil {
-			panic(err)
+	cleaner, err := core.NewTransmissionCleaner(1, 10, &r.transmissions)
+	if err != nil {
+		panic(err)
+	}
+	go cleaner.Start()
+
+	// CLI
+	x, err := cli.NewCliWorker(100, &r.transmissions)
+	if err != nil {
+		panic(err)
+	}
+
+	commandIn := make(chan string, 10)
+	go x.Start(commandIn)
+	go func() {
+		for {
+			//TODO: handle commands
+			<-commandIn
 		}
-
-		commandIn := make(chan string, 10)
-		go x.Start(commandIn)
-
-		go func() {
-			for {
-				//TODO: handle commands
-				<-commandIn
-			}
-		}()
-	*/
+	}()
 
 	// Receiver
-
 	errorChannel := make(chan error, 10)
 	r.Start(errorChannel)
 	go func() {
@@ -206,18 +219,15 @@ func main() {
 		}
 	}()
 
-	/*
-		t, err := NewTransmitter(1406, 10)
-		if err != nil {
-			panic(err)
-		}
-		f, err := os.Open("file.test")
-		err = t.SendFileTo(f, remoteAddr)
-		if err != nil {
-			panic(err)
-		}
-
-	*/
+	t, err := NewTransmitter(1406, 10)
+	if err != nil {
+		panic(err)
+	}
+	f, err := os.Open("file.test")
+	err = t.SendFileTo(f, remoteAddr)
+	if err != nil {
+		panic(err)
+	}
 
 	fin := make(chan bool, 1)
 	<-fin

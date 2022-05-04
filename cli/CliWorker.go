@@ -39,6 +39,7 @@ func NewCliWorker(refreshPerSecond int, anchor *map[uint8]*core.TransmissionIN) 
 func (w *UIDrawer) Start(commandLine chan string) {
 	w.run = true
 	reader := bufio.NewReader(os.Stdin)
+	cmdInput := make(chan string, 1)
 
 	for w.run {
 		// TODO: update ui
@@ -63,24 +64,31 @@ func (w *UIDrawer) Start(commandLine chan string) {
 			amount += 3
 		}
 
-		for alive := true; alive; {
+		alive := true
+		line := ""
+		go func() {
+			fmt.Printf(">")
+			readString, err := reader.ReadString('\n')
+			if err != nil {
+				fmt.Printf("CliWorker down %v\n", err)
+				alive = false
+			}
+			cmdInput <- readString
+		}()
+		for alive {
 			select {
 			case <-time.After(1 * time.Second):
 				alive = false
-			default:
+			case line = <-cmdInput:
 				alive = false
-				fmt.Printf(">")
-				line, err := reader.ReadString('\n')
-				if err != nil {
-					alive = false
-					break
-				}
 				commandLine <- line
 				amount += strings.Count(line, "\n") + 1
-				fmt.Printf("\u001B[1A%s\r", strings.Repeat(" ", len(line)))
+				//fmt.Printf("\u001B[1A%s\r", strings.Repeat(" ", len(line)))
 			}
 		}
-		fmt.Printf("\033[%dA", amount)
+		// save input
+		time.Sleep(time.Duration(w.sleepPeriod) * time.Millisecond)
+		fmt.Printf("\r\033[%dA", amount)
 	}
 }
 
