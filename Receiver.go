@@ -102,7 +102,6 @@ func (r *Receiver) openNewTransmission(uid uint8) *core.TransmissionIN {
 			Hash:            murmur3.New128(),
 		},
 		OutPath:     r.settings.outPath,
-		Timeout:     nil,
 		BufferLimit: r.settings.bufferLimit,
 		Buffer:      make(map[uint32]*packets.DataPacket),
 	}
@@ -128,7 +127,7 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader)
 	transmission := r.transmissions[header.StreamUID]
 	if transmission == nil {
 		if header.PacketType != packets.Info {
-			return fmt.Errorf("unexpected packet with header %+v", header)
+			return nil //ignore unexpected packets (out of order or timed out connections
 		}
 		transmission = r.openNewTransmission(header.StreamUID)
 	}
@@ -137,6 +136,7 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader)
 		if err != nil {
 			r.closeTransmission(transmission.Uid)
 		}
+		transmission.LastUpdated = time.Now()
 	}()
 
 	switch header.PacketType {
@@ -192,10 +192,10 @@ func (r *Receiver) handleInfo(p packets.InfoPacket, t *core.TransmissionIN) erro
 		return fmt.Errorf("unexpected packet with header %+v", p.Header)
 	}
 	// PRINTING
-	fmt.Printf("started receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
+	//fmt.Printf("started receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
+	fmt.Fprintf(log, "started receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
 
 	t.StartTime = time.Now()
-	t.Timeout = time.After(r.settings.networkTimeout * time.Second)
 
 	err := r.initFileIO(path.Join(t.OutPath, p.Filename), t)
 	if err != nil {
@@ -257,7 +257,8 @@ func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *core.Transmission
 	r.closeTransmission(t.Uid)
 
 	// PRINTING
-	fmt.Printf("finished receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
+	//fmt.Printf("finished receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
+	fmt.Fprintf(log, "finished receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
 	return nil
 }
 
@@ -294,6 +295,6 @@ func (r *Receiver) initFileIO(filePath string, t *core.TransmissionIN) error {
 		return err
 	}
 
-	t.FileIO = bufio.ReadWriter{Writer: bufio.NewWriter(file)}
+	t.FileIO = bufio.ReadWriter{Writer: bufio.NewWriterSize(file, r.settings.maxPacketSize)}
 	return nil
 }

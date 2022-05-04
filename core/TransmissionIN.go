@@ -10,7 +10,7 @@ type TransmissionIN struct {
 	IsInitialised bool
 	OutPath       string
 
-	Timeout <-chan time.Time
+	LastUpdated time.Time
 
 	BufferLimit int
 	Buffer      map[uint32]*packets.DataPacket
