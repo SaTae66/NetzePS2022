@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"github.com/twmb/murmur3"
 	"io"
 	"net"
@@ -87,7 +86,8 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 		return err
 	}
 
-	fmt.Printf("started sending transmission(%d): %d\n", transmission.uid, time.Now().UnixMilli())
+	// PRINTING
+	//fmt.Printf("started sending transmission(%d): %d\n", transmission.uid, time.Now().UnixMilli())
 
 	fin := make(chan bool, 1)
 	go func() {
@@ -96,7 +96,8 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 			case <-fin:
 				return
 			default:
-				fmt.Printf("\r%f%s\r", float64(transmission.bytesSent)/float64(fInfo.Size())*100, "%")
+				//PRINT
+				//fmt.Printf("\r%f%s\r", float64(transmission.bytesSent)/float64(fInfo.Size())*100, "%")
 				time.Sleep(1 * time.Second) // ONLY PROGRESS BAR
 			}
 		}
@@ -129,7 +130,8 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 		return err
 	}
 
-	fmt.Printf("finished sending transmission(%d): %d\n", transmission.uid, time.Now().UnixMilli())
+	// PRINTING
+	//fmt.Printf("finished sending transmission(%d): %d\n", transmission.uid, time.Now().UnixMilli())
 
 	return nil
 }

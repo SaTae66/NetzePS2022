@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"path"
+	"satae66.dev/netzeps2022/core"
 	"satae66.dev/netzeps2022/network/packets"
 	"time"
 )
@@ -27,7 +28,7 @@ type Receiver struct {
 	keepRunning bool
 
 	conn          *net.UDPConn
-	transmissions map[uint8]*TransmissionIN
+	transmissions map[uint8]*core.TransmissionIN
 }
 
 func NewReceiver(maxPacketSize int, networkTimeout int, bufferLimit int, outPath string, addr *net.UDPAddr) (*Receiver, error) {
@@ -54,7 +55,7 @@ func NewReceiver(maxPacketSize int, networkTimeout int, bufferLimit int, outPath
 			outPath:        outPath,
 		},
 		conn:          conn,
-		transmissions: make(map[uint8]*TransmissionIN),
+		transmissions: make(map[uint8]*core.TransmissionIN),
 	}, nil
 }
 
@@ -88,22 +89,22 @@ func (r *Receiver) Stop() {
 	r.keepRunning = false
 }
 
-func (r *Receiver) openNewTransmission(uid uint8) *TransmissionIN {
-	newTransmission := TransmissionIN{
-		Transmission: Transmission{
-			seqNr:           0,
-			networkIO:       net.UDPConn{},
-			fileIO:          bufio.ReadWriter{},
-			transmittedSize: 0,
-			totalSize:       0,
-			uid:             uid,
-			startTime:       time.Time{},
-			hash:            murmur3.New128(),
+func (r *Receiver) openNewTransmission(uid uint8) *core.TransmissionIN {
+	newTransmission := core.TransmissionIN{
+		Transmission: core.Transmission{
+			SeqNr:           0,
+			NetworkIO:       net.UDPConn{},
+			FileIO:          bufio.ReadWriter{},
+			TransmittedSize: 0,
+			TotalSize:       0,
+			Uid:             uid,
+			StartTime:       time.Time{},
+			Hash:            murmur3.New128(),
 		},
-		outPath:     r.settings.outPath,
-		timeout:     nil,
-		bufferLimit: r.settings.bufferLimit,
-		buffer:      make(map[uint32]*packets.DataPacket),
+		OutPath:     r.settings.outPath,
+		Timeout:     nil,
+		BufferLimit: r.settings.bufferLimit,
+		Buffer:      make(map[uint32]*packets.DataPacket),
 	}
 	r.transmissions[uid] = &newTransmission
 	return &newTransmission
@@ -134,7 +135,7 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader)
 
 	defer func() {
 		if err != nil {
-			r.closeTransmission(transmission.uid)
+			r.closeTransmission(transmission.Uid)
 		}
 	}()
 
@@ -186,64 +187,64 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader)
 	return nil
 }
 
-func (r *Receiver) handleInfo(p packets.InfoPacket, t *TransmissionIN) error {
-	if t.isInitialised || p.SequenceNr != 0 {
+func (r *Receiver) handleInfo(p packets.InfoPacket, t *core.TransmissionIN) error {
+	if t.IsInitialised || p.SequenceNr != 0 {
 		return fmt.Errorf("unexpected packet with header %+v", p.Header)
 	}
-	fmt.Printf("started receiving transmission(%d): %d\n", t.uid, time.Now().UnixMilli())
+	// PRINTING
+	//fmt.Printf("started receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
 
-	t.startTime = time.Now()
-	t.timeout = time.After(r.settings.networkTimeout * time.Second)
+	t.StartTime = time.Now()
+	t.Timeout = time.After(r.settings.networkTimeout * time.Second)
 
-	err := r.initFileIO(path.Join(t.outPath, p.Filename), t)
+	err := r.initFileIO(path.Join(t.OutPath, p.Filename), t)
 	if err != nil {
 		return err
 	}
 
-	t.totalSize = p.Filesize
-	t.isInitialised = true
-	t.seqNr++
+	t.TotalSize = p.Filesize
+	t.IsInitialised = true
+	t.SeqNr++
 	return nil
 }
 
-func (r *Receiver) handleData(p packets.DataPacket, t *TransmissionIN) error {
-	if p.SequenceNr != t.seqNr {
-		// TODO: separate buffer struct
-		if len(t.buffer) >= t.bufferLimit {
+func (r *Receiver) handleData(p packets.DataPacket, t *core.TransmissionIN) error {
+	if p.SequenceNr != t.SeqNr {
+		if len(t.Buffer) >= t.BufferLimit {
 			return errors.New("packet buffer full")
 		}
-		t.buffer[p.SequenceNr] = &p
+		t.Buffer[p.SequenceNr] = &p
 		return nil
 	}
 
-	_, err := t.fileIO.Write(p.Data)
+	_, err := t.FileIO.Write(p.Data)
 	if err != nil {
 		return err
 	}
 
-	err = t.fileIO.Flush()
+	err = t.FileIO.Flush()
 	if err != nil {
 		return err
 	}
 
-	_, err = t.hash.Write(p.Data)
+	_, err = t.Hash.Write(p.Data)
 	if err != nil {
 		return err
 	}
 
-	t.transmittedSize += uint64(len(p.Data))
-	t.seqNr++
+	t.TransmittedSize += uint64(len(p.Data))
+	t.SeqNr++
 	return nil
 }
 
-func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *TransmissionIN) error {
-	if p.SequenceNr != t.seqNr {
-		t.finalize = &p
+func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *core.TransmissionIN) error {
+	if p.SequenceNr != t.SeqNr {
+		t.Finalize = &p
 		return nil
 	}
 
 	actualHash := make([]byte, 0)
-	actualHash = t.hash.Sum(actualHash)
+	actualHash = t.Hash.Sum(actualHash)
 
 	expectedHash := p.Checksum[:]
 
@@ -252,23 +253,25 @@ func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *TransmissionIN) e
 		return fmt.Errorf("integrity check failed; expected:<%x> actual:<%x>", expectedHash, actualHash)
 	}
 
-	_ = t.fileIO.Flush()
-	r.closeTransmission(t.uid)
-	fmt.Printf("finished receiving transmission(%d): %d\n", t.uid, time.Now().UnixMilli())
+	_ = t.FileIO.Flush()
+	r.closeTransmission(t.Uid)
+
+	// PRINTING
+	//fmt.Printf("finished receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
 	return nil
 }
 
-func (r *Receiver) handleBuffer(t *TransmissionIN) error {
-	for p, exists := t.buffer[t.seqNr]; exists; p, exists = t.buffer[t.seqNr] {
-		delete(t.buffer, t.seqNr)
+func (r *Receiver) handleBuffer(t *core.TransmissionIN) error {
+	for p, exists := t.Buffer[t.SeqNr]; exists; p, exists = t.Buffer[t.SeqNr] {
+		delete(t.Buffer, t.SeqNr)
 		err := r.handlePacket(p.Header, bytes.NewReader(p.Data))
 		if err != nil {
 			return err
 		}
 	}
 
-	if t.finalize != nil && t.finalize.Header.SequenceNr == t.seqNr {
-		err := r.handleFinalize(*t.finalize, t)
+	if t.Finalize != nil && t.Finalize.Header.SequenceNr == t.SeqNr {
+		err := r.handleFinalize(*t.Finalize, t)
 		if err != nil {
 			return err
 		}
@@ -277,7 +280,7 @@ func (r *Receiver) handleBuffer(t *TransmissionIN) error {
 	return nil
 }
 
-func (r *Receiver) initFileIO(filePath string, t *TransmissionIN) error {
+func (r *Receiver) initFileIO(filePath string, t *core.TransmissionIN) error {
 	_, err := os.Open(filePath)
 	if os.IsExist(err) {
 		return errors.New("file already exists at specified path")
@@ -291,6 +294,6 @@ func (r *Receiver) initFileIO(filePath string, t *TransmissionIN) error {
 		return err
 	}
 
-	t.fileIO = bufio.ReadWriter{Writer: bufio.NewWriter(file)}
+	t.FileIO = bufio.ReadWriter{Writer: bufio.NewWriter(file)}
 	return nil
 }
