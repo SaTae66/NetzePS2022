@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/twmb/murmur3"
 	"io"
 	"net"
@@ -88,6 +89,7 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 
 	// PRINTING
 	//fmt.Printf("started sending transmission(%d): %d\n", transmission.uid, time.Now().UnixMilli())
+	fmt.Fprintf(log, "started sending transmission(%d): %d\n", transmission.uid, time.Now().UnixMilli())
 
 	fin := make(chan bool, 1)
 	go func() {
@@ -121,7 +123,7 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 			break
 		}
 
-		time.Sleep(100 * time.Microsecond) // SEND TIMEOUT
+		time.Sleep(time.Duration(t.timeout) * time.Microsecond) // SEND TIMEOUT
 	}
 
 	checksum := transmission.hash.Sum(nil)
@@ -132,6 +134,7 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 
 	// PRINTING
 	//fmt.Printf("finished sending transmission(%d): %d\n", transmission.uid, time.Now().UnixMilli())
+	fmt.Fprintf(log, "finished sending transmission(%d): %d\n", transmission.uid, time.Now().UnixMilli())
 
 	return nil
 }
