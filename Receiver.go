@@ -192,7 +192,7 @@ func (r *Receiver) handleInfo(p packets.InfoPacket, t *core.TransmissionIN) erro
 		return fmt.Errorf("unexpected packet with header %+v", p.Header)
 	}
 	// PRINTING
-	//fmt.Printf("started receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
+	fmt.Printf("started receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
 
 	t.StartTime = time.Now()
 	t.Timeout = time.After(r.settings.networkTimeout * time.Second)
@@ -257,7 +257,7 @@ func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *core.Transmission
 	r.closeTransmission(t.Uid)
 
 	// PRINTING
-	//fmt.Printf("finished receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
+	fmt.Printf("finished receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
 	return nil
 }
 

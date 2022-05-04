@@ -1,14 +1,17 @@
 package cli
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"satae66.dev/netzeps2022/core"
+	"strings"
 	"time"
 )
 
-type CliWorker struct {
+type UIDrawer struct {
 	run bool
 
 	sleepPeriod int // time between ui refreshes in milliseconds
@@ -16,7 +19,7 @@ type CliWorker struct {
 	anchor *map[uint8]*core.TransmissionIN // anchor back to the transmission map
 }
 
-func NewCliWorker(refreshPerSecond int, anchor *map[uint8]*core.TransmissionIN) (*CliWorker, error) {
+func NewCliWorker(refreshPerSecond int, anchor *map[uint8]*core.TransmissionIN) (*UIDrawer, error) {
 	if refreshPerSecond < 1 {
 		return nil, errors.New("ui must be refreshed at least once per second")
 	}
@@ -27,14 +30,15 @@ func NewCliWorker(refreshPerSecond int, anchor *map[uint8]*core.TransmissionIN) 
 		return nil, errors.New("anchor must NOT be nil")
 	}
 
-	return &CliWorker{
+	return &UIDrawer{
 		sleepPeriod: 1000 / refreshPerSecond,
 		anchor:      anchor,
 	}, nil
 }
 
-func (w *CliWorker) Start() {
+func (w *UIDrawer) Start(commandLine chan string) {
 	w.run = true
+	reader := bufio.NewReader(os.Stdin)
 
 	for w.run {
 		// TODO: update ui
@@ -56,14 +60,31 @@ func (w *CliWorker) Start() {
 			printHeader()
 			NewInfoLine(uid, progress, speed, eta).print()
 			printFooter()
-			amount++
+			amount += 3
 		}
-		time.Sleep(time.Duration(w.sleepPeriod) * time.Millisecond)
-		fmt.Printf("\033[%dA", amount*3)
+
+		for alive := true; alive; {
+			select {
+			case <-time.After(1 * time.Second):
+				alive = false
+			default:
+				alive = false
+				fmt.Printf(">")
+				line, err := reader.ReadString('\n')
+				if err != nil {
+					alive = false
+					break
+				}
+				commandLine <- line
+				amount += strings.Count(line, "\n") + 1
+				fmt.Printf("\u001B[1A%s\r", strings.Repeat(" ", len(line)))
+			}
+		}
+		fmt.Printf("\033[%dA", amount)
 	}
 }
 
-func (w *CliWorker) Stop() {
+func (w *UIDrawer) Stop() {
 	w.run = false
 }
 

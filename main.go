@@ -5,8 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"net"
-	"os"
-	"satae66.dev/netzeps2022/cli"
 )
 
 type Command interface {
@@ -174,34 +172,52 @@ func main() {
 		Zone: "",
 	}
 
+	// Receiver
 	r, err := NewReceiver(1406, 10, 100000, "./down/", remoteAddr)
 	if err != nil {
 		panic(err)
 	}
-	x, err := cli.NewCliWorker(1, &r.transmissions)
-	if err != nil {
-		panic(err)
-	}
-	go x.Start()
+
+	/*
+		// CLI
+		x, err := cli.NewCliWorker(1, &r.transmissions)
+		if err != nil {
+			panic(err)
+		}
+
+		commandIn := make(chan string, 10)
+		go x.Start(commandIn)
+
+		go func() {
+			for {
+				//TODO: handle commands
+				<-commandIn
+			}
+		}()
+	*/
+
+	// Receiver
 
 	errorChannel := make(chan error, 10)
 	r.Start(errorChannel)
-
 	go func() {
 		for {
 			fmt.Printf("%s\n", <-errorChannel)
 		}
 	}()
 
-	t, err := NewTransmitter(1406, 10)
-	if err != nil {
-		panic(err)
-	}
-	f, err := os.Open("file.test")
-	err = t.SendFileTo(f, remoteAddr)
-	if err != nil {
-		panic(err)
-	}
+	/*
+		t, err := NewTransmitter(1406, 10)
+		if err != nil {
+			panic(err)
+		}
+		f, err := os.Open("file.test")
+		err = t.SendFileTo(f, remoteAddr)
+		if err != nil {
+			panic(err)
+		}
+
+	*/
 
 	fin := make(chan bool, 1)
 	<-fin

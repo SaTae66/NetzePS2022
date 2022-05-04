@@ -96,7 +96,7 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 			case <-fin:
 				return
 			default:
-				//PRINT
+				// PRINTING
 				//fmt.Printf("\r%f%s\r", float64(transmission.bytesSent)/float64(fInfo.Size())*100, "%")
 				time.Sleep(1 * time.Second) // ONLY PROGRESS BAR
 			}
