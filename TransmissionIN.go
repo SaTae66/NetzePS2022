@@ -7,8 +7,8 @@ import (
 
 type TransmissionIN struct {
 	Transmission
-	initialised bool
-	outPath     string
+	isInitialised bool
+	outPath       string
 
 	timeout <-chan time.Time
 
