@@ -10,17 +10,7 @@ const (
 	vertical   = "|"
 )
 
-func Draw(lines []*InfoLine) {
-	printHeader()
-	for _, line := range lines {
-		line.print()
-		printFooter()
-	}
-}
-
 func printHeader() {
-	printDefaultLine()
-	printInfoLine()
 	printDefaultLine()
 }
 
@@ -44,7 +34,7 @@ func printDefaultLine() {
 	fmt.Printf("%s\n", line.String())
 }
 
-func printInfoLine() {
+func printHeading() {
 	line := strings.Builder{}
 
 	line.WriteString(vertical)

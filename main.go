@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"satae66.dev/netzeps2022/cli"
 )
 
 type Command interface {
@@ -165,23 +166,6 @@ func handleCommand(args []string) error {
 }
 
 func main() {
-	/*
-		totalSize := uint64(10000) // bytes
-		totalSent := uint64(3000)  // bytes
-		timeElapsed := 1           // seconds
-
-		progress := int(float64(totalSent) / float64(totalSize) * 100) // percent
-		speed := uint32(totalSent / uint64(timeElapsed))               // bytes/second
-		secLeft := (totalSize - totalSent) / uint64(speed)             // seconds
-		eta, err := time.ParseDuration(fmt.Sprintf("%ds", secLeft))
-		if err != nil {
-			return
-		}
-
-		x := cli.NewInfoLine(1, progress, speed, eta)
-		cli.Draw([]*cli.InfoLine{x})
-
-	*/
 
 	remoteAddr := &net.UDPAddr{
 		IP: net.ParseIP("localhost"),
@@ -194,6 +178,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	x, err := cli.NewCliWorker(1, &r.transmissions)
+	if err != nil {
+		panic(err)
+	}
+	go x.Start()
 
 	errorChannel := make(chan error, 10)
 	r.Start(errorChannel)
@@ -208,7 +197,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	f, err := os.Open("dummy.random")
+	f, err := os.Open("file.test")
 	err = t.SendFileTo(f, remoteAddr)
 	if err != nil {
 		panic(err)
