@@ -87,12 +87,7 @@ func (r *Receiver) Stop() {
 	r.keepRunning = false
 }
 
-func (r *Receiver) getTransmission(uid uint8) *TransmissionIN {
-	incomingTransmission := r.transmissions[uid]
-	if incomingTransmission != nil {
-		return incomingTransmission
-	}
-
+func (r *Receiver) openNewTransmission(uid uint8) *TransmissionIN {
 	newTransmission := TransmissionIN{
 		Transmission: Transmission{
 			seqNr:           0,
@@ -113,7 +108,7 @@ func (r *Receiver) getTransmission(uid uint8) *TransmissionIN {
 	return &newTransmission
 }
 
-func (r *Receiver) removeTransmission(uid uint8) {
+func (r *Receiver) closeTransmission(uid uint8) {
 	delete(r.transmissions, uid)
 }
 
@@ -128,24 +123,29 @@ func (r *Receiver) nextUDPMessage() (*bytes.Reader, error) {
 }
 
 func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader) (err error) {
-	transmission := r.getTransmission(header.StreamUID)
+	transmission := r.transmissions[header.StreamUID]
+	if transmission == nil {
+		if header.PacketType != packets.Info {
+			return fmt.Errorf("unexpected packet with header %+v", header)
+		}
+		transmission = r.openNewTransmission(header.StreamUID)
+	}
 
 	defer func() {
 		if err != nil {
-			r.removeTransmission(transmission.uid)
+			r.closeTransmission(transmission.uid)
+		} else {
+			transmission.seqNr++
 		}
-		transmission.seqNr++
 	}()
 
 	switch header.PacketType {
 	case packets.Info:
-		if transmission.initialised || header.SequenceNr != 0 || transmission.seqNr != 0 {
-			return fmt.Errorf("packet with header %v malformed", header)
-		}
 		infoPacket, err := packets.ParseInfoPacket(udpMessage)
 		if err != nil {
 			return err
 		}
+		infoPacket.SetHeader(header)
 		err = r.handleInfo(infoPacket, transmission)
 		if err != nil {
 			return err
@@ -156,14 +156,7 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader)
 		if err != nil {
 			return err
 		}
-		if header.SequenceNr != transmission.seqNr {
-			if len(transmission.buffer) >= transmission.bufferLimit {
-				return errors.New("packet buffer full")
-			}
-			dataPacket.SetHeader(header)
-			transmission.buffer[header.SequenceNr] = &dataPacket
-			break
-		}
+		dataPacket.SetHeader(header)
 		err = r.handleData(dataPacket, transmission)
 		if err != nil {
 			return err
@@ -174,25 +167,24 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader)
 		if err != nil {
 			return err
 		}
-		if header.SequenceNr != transmission.seqNr {
-			finalizePacket.SetHeader(header)
-			transmission.finalize = &finalizePacket
-			break
-		}
+		finalizePacket.SetHeader(header)
 		err = r.handleFinalize(finalizePacket, transmission)
 		if err != nil {
 			return err
 		}
 		break
 	default:
-		return fmt.Errorf("packet with header %v malformed; expected data or finalize packet", header)
+		return fmt.Errorf("malformed packet with header %v", header)
 	}
 
 	return nil
 }
 
 func (r *Receiver) handleInfo(p packets.InfoPacket, t *TransmissionIN) error {
-	fmt.Printf("started transmission: %d\n", time.Now().UnixMilli())
+	if t.isInitialised || p.SequenceNr != 0 {
+		return fmt.Errorf("unexpected packet with header %+v", p.Header)
+	}
+	fmt.Printf("started transmission(%d): %d\n", p.StreamUID, time.Now().UnixMilli())
 
 	t.startTime = time.Now()
 	t.timeout = time.After(r.settings.networkTimeout * time.Second)
@@ -203,11 +195,20 @@ func (r *Receiver) handleInfo(p packets.InfoPacket, t *TransmissionIN) error {
 	}
 
 	t.totalSize = p.Filesize
-	t.initialised = true
+	t.isInitialised = true
 	return nil
 }
 
 func (r *Receiver) handleData(p packets.DataPacket, t *TransmissionIN) error {
+	if p.SequenceNr != t.seqNr {
+		// TODO: separate buffer struct
+		if len(t.buffer) >= t.bufferLimit {
+			return errors.New("packet buffer full")
+		}
+		t.buffer[p.SequenceNr] = &p
+		return nil
+	}
+
 	_, err := t.fileIO.Write(p.Data)
 	if err != nil {
 		return err
@@ -228,6 +229,11 @@ func (r *Receiver) handleData(p packets.DataPacket, t *TransmissionIN) error {
 }
 
 func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *TransmissionIN) error {
+	if p.SequenceNr != t.seqNr {
+		t.finalize = &p
+		return nil
+	}
+
 	actualHash := make([]byte, 0)
 	actualHash = t.hash.Sum(actualHash)
 
@@ -239,12 +245,13 @@ func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *TransmissionIN) e
 	}
 
 	_ = t.fileIO.Flush()
-	r.removeTransmission(t.uid)
+	r.closeTransmission(t.uid)
 	fmt.Printf("finished transmission: %d\n", time.Now().UnixMilli())
 	return nil
 }
 
 func (r *Receiver) handleBuffer(t *TransmissionIN) error {
+	//TODO: use this
 	for p, exists := t.buffer[t.seqNr]; exists; {
 		err := r.handlePacket(p.Header, bytes.NewReader(p.Data))
 		if err != nil {
