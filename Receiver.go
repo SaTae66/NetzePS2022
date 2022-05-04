@@ -131,7 +131,6 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader)
 		}
 		transmission = r.openNewTransmission(header.StreamUID)
 	}
-	//fmt.Printf("header.sequenceNr: %d <==> %d transmission.sequenceNr\n", header.SequenceNr, transmission.seqNr)
 
 	defer func() {
 		if err != nil {

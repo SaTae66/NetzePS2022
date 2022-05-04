@@ -97,7 +97,7 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 				return
 			default:
 				fmt.Printf("\r%f%s\r", float64(transmission.bytesSent)/float64(fInfo.Size())*100, "%")
-				time.Sleep(1 * time.Second)
+				time.Sleep(1 * time.Second) // ONLY PROGRESS BAR
 			}
 		}
 	}()
@@ -120,7 +120,7 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 			break
 		}
 
-		//time.Sleep(10 * time.Microsecond)
+		time.Sleep(100 * time.Microsecond) // SEND TIMEOUT
 	}
 
 	checksum := transmission.hash.Sum(nil)
