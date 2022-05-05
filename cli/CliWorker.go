@@ -1,9 +1,9 @@
 package cli
 
 import (
-	"bufio"
 	"errors"
 	"fmt"
+	"golang.org/x/term"
 	"math"
 	"os"
 	"satae66.dev/netzeps2022/core"
@@ -23,8 +23,8 @@ func NewCliWorker(refreshPerSecond int, anchor *map[uint8]*core.TransmissionIN) 
 	if refreshPerSecond < 1 {
 		return nil, errors.New("ui must be refreshed at least once per second")
 	}
-	if refreshPerSecond > 100 {
-		return nil, errors.New("ui must NOT be refreshed more than 100 times per second")
+	if refreshPerSecond > 1000 {
+		return nil, errors.New("ui must NOT be refreshed more than 1000 times per second")
 	}
 	if anchor == nil {
 		return nil, errors.New("anchor must NOT be nil")
@@ -38,15 +38,24 @@ func NewCliWorker(refreshPerSecond int, anchor *map[uint8]*core.TransmissionIN) 
 
 func (w *UIDrawer) Start(commandLine chan string) {
 	w.run = true
-	reader := bufio.NewReader(os.Stdin)
+	// switch stdin into 'raw' mode
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
+
 	cmdInput := make(chan string, 1)
+	line := ""
 
 	for w.run {
-		// TODO: update ui
 		printHeader()
 		printHeading()
 		printFooter()
-		amount := 3
+		// TODO: update ui
+		amount := 3 // amount of lines printed
+
 		for i := uint8(0); i < 255; i++ {
 			curTransmission := (*w.anchor)[i]
 			if curTransmission == nil {
@@ -62,33 +71,63 @@ func (w *UIDrawer) Start(commandLine chan string) {
 			NewInfoLine(uid, progress, speed, eta).print()
 			printFooter()
 			amount += 3
+
+			//TODO: only update lines that need to be
 		}
 
-		alive := true
-		line := ""
+		waitForInput := true
+
 		go func() {
-			fmt.Printf(">")
-			readString, err := reader.ReadString('\n')
-			if err != nil {
-				fmt.Printf("CliWorker down %v\n", err)
-				alive = false
+			fmt.Printf(">%s", line)
+			b := make([]byte, 1)
+			for {
+				_, err := os.Stdin.Read(b)
+				if err != nil {
+					fmt.Printf("CliWorker down %v\n", err)
+					waitForInput = false
+					break
+				}
+
+				if string(b) == "\x08" {
+					line = line[0:int(math.Max(0, float64(len(line)-1)))]
+				} else {
+					newChar := string(b)
+					if newChar == "\r" {
+						newChar = "\n"
+					}
+					line += newChar
+					if newChar == "\n" {
+						break
+					}
+				}
 			}
-			cmdInput <- readString
+			cmdInput <- ""
 		}()
-		for alive {
-			select {
-			case <-time.After(1 * time.Second):
-				alive = false
-			case line = <-cmdInput:
-				alive = false
-				commandLine <- line
-				amount += strings.Count(line, "\n") + 1
-				//fmt.Printf("\u001B[1A%s\r", strings.Repeat(" ", len(line)))
-			}
+
+		select {
+		case <-time.After(time.Duration(w.sleepPeriod) * time.Millisecond):
+			waitForInput = false
+		case _ = <-cmdInput:
+			waitForInput = false
+			commandLine <- line
+			amount += strings.Count(line, "\n")
+			line = ""
 		}
-		// save input
-		time.Sleep(time.Duration(w.sleepPeriod) * time.Millisecond)
-		fmt.Printf("\r\033[%dA", amount)
+
+		//fmt.Printf("\033[2J\r")
+
+		fmt.Printf("\r")
+		fmt.Printf("\033[K")
+
+		for i := 0; i < amount; i++ {
+			fmt.Printf("\033[%dA", 1)
+			fmt.Printf("\r")
+			fmt.Printf("\033[K")
+		}
+		fmt.Printf("\r")
+		if waitForInput {
+			fmt.Printf("\r")
+		}
 	}
 }
 

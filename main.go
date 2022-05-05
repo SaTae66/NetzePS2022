@@ -196,7 +196,7 @@ func main() {
 	go cleaner.Start()
 
 	// CLI
-	x, err := cli.NewCliWorker(100, &r.transmissions)
+	x, err := cli.NewCliWorker(10, &r.transmissions)
 	if err != nil {
 		panic(err)
 	}
