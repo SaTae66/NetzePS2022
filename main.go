@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"satae66.dev/netzeps2022/cli"
-	"satae66.dev/netzeps2022/core"
 )
 
 type Command interface {
@@ -189,14 +188,17 @@ func main() {
 		panic(err)
 	}
 
-	cleaner, err := core.NewTransmissionCleaner(1, 10, &r.transmissions)
-	if err != nil {
-		panic(err)
-	}
-	go cleaner.Start()
+	/*
+		cleaner, err := core.NewTransmissionCleaner(1, 10, &r.transmissions)
+		if err != nil {
+			panic(err)
+		}
+		go cleaner.Start()
+
+	*/
 
 	// CLI
-	x, err := cli.NewCliWorker(10, &r.transmissions)
+	x, err := cli.NewCliWorker(5, &r.transmissions)
 	if err != nil {
 		panic(err)
 	}
