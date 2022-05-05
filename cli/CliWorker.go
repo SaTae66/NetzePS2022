@@ -118,7 +118,6 @@ func (w *UIDrawer) Start(inputHandler chan string) {
 			}
 
 			if in == "\n" {
-				fmt.Printf("\033[1A")
 				inputHandler <- clipboard
 				clipboard = ""
 				fin <- true
@@ -132,7 +131,7 @@ func (w *UIDrawer) Start(inputHandler chan string) {
 			}
 		}(gotInput)
 
-		//fmt.Printf("\r\033[K") // clear line
+		fmt.Printf("\r\033[K") // clear line
 
 		//move up to the first InfoLine
 		if n := curAnchorLen * 2; n != 0 {
