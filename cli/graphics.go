@@ -10,15 +10,7 @@ const (
 	vertical   = "|"
 )
 
-func printHeader() {
-	printDefaultLine()
-}
-
-func printFooter() {
-	printDefaultLine()
-}
-
-func printDefaultLine() {
+func GetSeparatorLine() string {
 	line := strings.Builder{}
 
 	line.WriteString(vertical)
@@ -30,11 +22,12 @@ func printDefaultLine() {
 	line.WriteString(vertical)
 	line.WriteString(strings.Repeat(horizontal, 13))
 	line.WriteString(vertical)
+	line.WriteString("\n")
 
-	fmt.Printf("%s\n", line.String())
+	return line.String()
 }
 
-func printHeading() {
+func GetHeadingLine() string {
 	line := strings.Builder{}
 
 	line.WriteString(vertical)
@@ -46,6 +39,7 @@ func printHeading() {
 	line.WriteString(vertical)
 	line.WriteString(fmt.Sprintf("     %s     ", "EST"))
 	line.WriteString(vertical)
+	line.WriteString("\n")
 
-	fmt.Printf("%s\n", line.String())
+	return line.String()
 }
