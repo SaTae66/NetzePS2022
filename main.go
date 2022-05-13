@@ -198,7 +198,7 @@ func main() {
 	*/
 
 	// CLI
-	x, err := cli.NewCliWorker(5, &r.transmissions)
+	x, err := cli.NewCliWorker(1, &r.transmissions)
 	if err != nil {
 		panic(err)
 	}
@@ -225,10 +225,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	f, err := os.Open("file.test")
-	err = t.SendFileTo(f, remoteAddr)
-	if err != nil {
-		panic(err)
+	for i := 0; i < 10; i++ {
+		go func() {
+			f, err := os.Open("file.test")
+			if err != nil {
+				panic(err)
+			}
+			err = t.SendFileTo(f, remoteAddr)
+			if err != nil {
+				panic(err)
+			}
+		}()
 	}
 
 	fin := make(chan bool, 1)
