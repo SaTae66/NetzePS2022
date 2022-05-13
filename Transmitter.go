@@ -91,21 +91,6 @@ func (t *Transmitter) SendFileTo(file *os.File, addr *net.UDPAddr) error {
 	//fmt.Printf("started sending transmission(%d): %d\n", transmission.uid, time.Now().UnixMilli())
 	fmt.Fprintf(log, "started sending transmission(%d): %d\n", transmission.uid, time.Now().UnixMilli())
 
-	fin := make(chan bool, 1)
-	go func() {
-		for {
-			select {
-			case <-fin:
-				return
-			default:
-				// PRINTING
-				//fmt.Printf("\r%f%s\r", float64(transmission.bytesSent)/float64(fInfo.Size())*100, "%")
-				time.Sleep(1 * time.Second) // ONLY PROGRESS BAR
-			}
-		}
-	}()
-	defer func() { fin <- true }()
-
 	buf := make([]byte, t.maxPacketSize-packets.HeaderSize)
 	for {
 		n, err := file.Read(buf)
