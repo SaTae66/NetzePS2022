@@ -152,6 +152,13 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader,
 		if err != nil {
 			return err
 		}
+		if addr != nil {
+			header.PacketType = packets.Ack
+			_, _, err = r.conn.WriteMsgUDP(header.ToBytes(), nil, addr)
+			if err != nil {
+				return err
+			}
+		}
 		break
 	case packets.Data:
 		dataPacket, err := packets.ParseDataPacket(udpMessage)
@@ -185,6 +192,13 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader,
 		if err != nil {
 			return err
 		}
+		if addr != nil {
+			header.PacketType = packets.Ack
+			_, _, err = r.conn.WriteMsgUDP(header.ToBytes(), nil, addr)
+			if err != nil {
+				return err
+			}
+		}
 		break
 	default:
 		return fmt.Errorf("malformed packet with header %v", header)
@@ -200,6 +214,7 @@ func (r *Receiver) handleInfo(p packets.InfoPacket, t *core.TransmissionIN) erro
 	// PRINTING
 	//fmt.Printf("started receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
 	fmt.Fprintf(log, "started receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
+	log.Flush()
 
 	t.StartTime = time.Now()
 
@@ -265,6 +280,7 @@ func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *core.Transmission
 	// PRINTING
 	//fmt.Printf("finished receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
 	fmt.Fprintf(log, "finished receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
+	log.Flush()
 	return nil
 }
 
