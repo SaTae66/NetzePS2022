@@ -221,23 +221,6 @@ func main() {
 		}
 	}()
 
-	t, err := NewTransmitter(1406, 10)
-	if err != nil {
-		panic(err)
-	}
-	for i := 0; i < 10; i++ {
-		go func() {
-			f, err := os.Open("file.test")
-			if err != nil {
-				panic(err)
-			}
-			err = t.SendFileTo(f, remoteAddr)
-			if err != nil {
-				panic(err)
-			}
-		}()
-	}
-
 	fin := make(chan bool, 1)
 	<-fin
 }

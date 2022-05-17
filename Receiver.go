@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/twmb/murmur3"
@@ -41,6 +40,9 @@ func NewReceiver(maxPacketSize int, networkTimeout int, bufferLimit int, outPath
 	if bufferLimit < 1 {
 		return nil, errors.New("bufferLimit must be at least 1 packet")
 	}
+	if addr == nil {
+		return nil, errors.New("addr must not be nil")
+	}
 
 	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
@@ -64,7 +66,7 @@ func (r *Receiver) Start(status chan error) {
 
 	go func() {
 		for r.keepRunning {
-			nextPacket, err := r.nextUDPMessage()
+			nextPacket, addr, err := r.nextUDPMessage()
 			if err != nil {
 				status <- err
 				continue
@@ -76,7 +78,7 @@ func (r *Receiver) Start(status chan error) {
 				continue
 			}
 
-			err = r.handlePacket(header, nextPacket)
+			err = r.handlePacket(header, nextPacket, addr)
 			if err != nil {
 				status <- err
 				continue
@@ -113,17 +115,17 @@ func (r *Receiver) closeTransmission(uid uint8) {
 	delete(r.transmissions, uid)
 }
 
-func (r *Receiver) nextUDPMessage() (*bytes.Reader, error) {
+func (r *Receiver) nextUDPMessage() (*bytes.Reader, *net.UDPAddr, error) {
 	rawBytes := make([]byte, r.settings.maxPacketSize)
-	n, _, _, _, err := r.conn.ReadMsgUDP(rawBytes, nil)
+	n, _, _, addr, err := r.conn.ReadMsgUDP(rawBytes, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return bytes.NewReader(rawBytes[:n]), nil
+	return bytes.NewReader(rawBytes[:n]), addr, nil
 }
 
-func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader) (err error) {
+func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader, addr *net.UDPAddr) (err error) {
 	transmission := r.transmissions[header.StreamUID]
 	if transmission == nil {
 		if header.PacketType != packets.Info {
@@ -133,10 +135,10 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader)
 	}
 
 	defer func() {
+		transmission.LastUpdated = time.Now()
 		if err != nil {
 			r.closeTransmission(transmission.Uid)
 		}
-		transmission.LastUpdated = time.Now()
 	}()
 
 	switch header.PacketType {
@@ -152,9 +154,6 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader)
 		}
 		break
 	case packets.Data:
-		if header.SequenceNr == binary.LittleEndian.Uint32([]byte{0xCE, 0x37, 0x00, 0x00}) {
-			fmt.Print()
-		}
 		dataPacket, err := packets.ParseDataPacket(udpMessage)
 		if err != nil {
 			return err
@@ -167,6 +166,13 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader)
 		err = r.handleBuffer(transmission)
 		if err != nil {
 			return err
+		}
+		if addr != nil {
+			header.PacketType = packets.Ack
+			_, _, err = r.conn.WriteMsgUDP(header.ToBytes(), nil, addr)
+			if err != nil {
+				return err
+			}
 		}
 		break
 	case packets.Finalize:
@@ -265,7 +271,7 @@ func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *core.Transmission
 func (r *Receiver) handleBuffer(t *core.TransmissionIN) error {
 	for p, exists := t.Buffer[t.SeqNr]; exists; p, exists = t.Buffer[t.SeqNr] {
 		delete(t.Buffer, t.SeqNr)
-		err := r.handlePacket(p.Header, bytes.NewReader(p.Data))
+		err := r.handlePacket(p.Header, bytes.NewReader(p.Data), nil)
 		if err != nil {
 			return err
 		}
