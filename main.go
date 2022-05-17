@@ -5,9 +5,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"math"
 	"net"
 	"os"
 	"satae66.dev/netzeps2022/cli"
+	"satae66.dev/netzeps2022/core"
 )
 
 type Command interface {
@@ -169,10 +171,11 @@ func handleCommand(args []string) error {
 var log *bufio.Writer
 
 func main() {
-	logFile, err := os.OpenFile("go_log.txt", os.O_CREATE, 0755)
+	logFile, err := os.Create("go_log.txt")
 	if err != nil {
 		panic(err)
 	}
+	defer logFile.Close()
 	log = bufio.NewWriter(logFile)
 
 	remoteAddr := &net.UDPAddr{
@@ -183,19 +186,16 @@ func main() {
 	}
 
 	// Receiver
-	r, err := NewReceiver(1406, 10, 100000, "./down/", remoteAddr)
+	r, err := NewReceiver(math.MaxUint16, 10, 100000, "./down/", remoteAddr)
 	if err != nil {
 		panic(err)
 	}
 
-	/*
-		cleaner, err := core.NewTransmissionCleaner(1, 10, &r.transmissions)
-		if err != nil {
-			panic(err)
-		}
-		go cleaner.Start()
-
-	*/
+	cleaner, err := core.NewTransmissionCleaner(1, 10, &r.transmissions)
+	if err != nil {
+		panic(err)
+	}
+	go cleaner.Start()
 
 	// CLI
 	x, err := cli.NewCliWorker(1, &r.transmissions)
