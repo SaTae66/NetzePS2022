@@ -36,7 +36,7 @@ func (t *TransmissionCleaner) Start() {
 				continue
 			}
 			if time.Now().After(curTransmission.LastUpdated.Add(time.Duration(t.timeout) * time.Second)) {
-				fmt.Printf("transmission %d timed out\n", i)
+				//fmt.Printf("transmission %d timed out\n", i)
 				(*t.anchor)[i] = nil
 			}
 		}
