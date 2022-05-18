@@ -1,83 +1,43 @@
-started receiving transmission(222): 1652806104665
-finished receiving transmission(222): 1652806104699
-started receiving transmission(212): 1652806121466
-finished receiving transmission(212): 1652806121500
-started receiving transmission(125): 1652806123887
-finished receiving transmission(125): 1652806123917
-started receiving transmission(85): 1652806126301
-finished receiving transmission(85): 1652806126338
-started receiving transmission(183): 1652806128599
-finished receiving transmission(183): 1652806128633
-started receiving transmission(82): 1652806131068
-finished receiving transmission(82): 1652806131104
-started receiving transmission(216): 1652806133209
-finished receiving transmission(216): 1652806133254
-started receiving transmission(171): 1652806135663
-finished receiving transmission(171): 1652806135698
-started receiving transmission(86): 1652806137982
-finished receiving transmission(86): 1652806138017
-started receiving transmission(112): 1652806140820
-finished receiving transmission(112): 1652806140858
+34
+34
+30
+37
+34
+36
+45
+35
+35
+38
 
-started receiving transmission(186): 1652806159055
-finished receiving transmission(186): 1652806159946
-started receiving transmission(12): 1652806162798
-finished receiving transmission(12): 1652806163708
-started receiving transmission(151): 1652806166722
-finished receiving transmission(151): 1652806167638
-started receiving transmission(58): 1652806172499
-finished receiving transmission(58): 1652806173420
-started receiving transmission(130): 1652806176912
-finished receiving transmission(130): 1652806177814
-started receiving transmission(143): 1652806180549
-finished receiving transmission(143): 1652806181440
-started receiving transmission(21): 1652806183310
-finished receiving transmission(21): 1652806184218
-started receiving transmission(57): 1652806209409
-finished receiving transmission(57): 1652806210303
-started receiving transmission(1): 1652806213701
-finished receiving transmission(1): 1652806214585
-started receiving transmission(98): 1652806245875
-finished receiving transmission(98): 1652806246760
+891
+910
+916
+921
+902
+891
+908
+894
+884
+885
 
-started receiving transmission(66): 1652806301893
-finished receiving transmission(66): 1652806303658
-started receiving transmission(240): 1652806308217
-finished receiving transmission(240): 1652806309973
-started receiving transmission(3): 1652806312263
-finished receiving transmission(3): 1652806314043
-started receiving transmission(79): 1652806316349
-finished receiving transmission(79): 1652806318109
-started receiving transmission(205): 1652806320385
-finished receiving transmission(205): 1652806322103
-started receiving transmission(188): 1652806324633
-finished receiving transmission(188): 1652806326418
-started receiving transmission(37): 1652806328436
-finished receiving transmission(37): 1652806330168
-started receiving transmission(98): 1652806332385
-finished receiving transmission(98): 1652806334140
-started receiving transmission(1): 1652806336661
-finished receiving transmission(1): 1652806338409
-started receiving transmission(176): 1652806363238
-finished receiving transmission(176): 1652806365025
+1765
+1756
+1780
+1760
+1718
+1785
+1732
+1755
+1748
+1787
 
-started receiving transmission(184): 1652806393433
-finished receiving transmission(184): 1652806401769
-started receiving transmission(201): 1652806407782
-finished receiving transmission(201): 1652806416148
-started receiving transmission(15): 1652806418627
-finished receiving transmission(15): 1652806426943
-started receiving transmission(1): 1652806429912
-finished receiving transmission(1): 1652806438307
-started receiving transmission(81): 1652806440703
-finished receiving transmission(81): 1652806449068
-started receiving transmission(122): 1652806452932
-finished receiving transmission(122): 1652806461255
-started receiving transmission(8): 1652806463513
-finished receiving transmission(8): 1652806471850
-started receiving transmission(99): 1652806474031
-finished receiving transmission(99): 1652806482336
-started receiving transmission(187): 1652806484606
-finished receiving transmission(187): 1652806492944
-started receiving transmission(100): 1652806498273
-finished receiving transmission(100): 1652806506461
+8336
+8366
+8316
+8395
+8365
+8323
+8337
+8305
+8338
+8188

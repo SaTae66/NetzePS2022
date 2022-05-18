@@ -1,83 +1,43 @@
-started receiving transmission(42): 1652808272910
-finished receiving transmission(42): 1652808273018
-started receiving transmission(186): 1652808307968
-finished receiving transmission(186): 1652808308079
-started receiving transmission(182): 1652808311038
-finished receiving transmission(182): 1652808311154
-started receiving transmission(233): 1652808313804
-finished receiving transmission(233): 1652808313913
-started receiving transmission(13): 1652806760861
-finished receiving transmission(13): 1652806760970
-started receiving transmission(230): 1652806763010
-finished receiving transmission(230): 1652806763116
-started receiving transmission(103): 1652806765468
-finished receiving transmission(103): 1652806765578
-started receiving transmission(119): 1652806767929
-finished receiving transmission(119): 1652806768043
-started receiving transmission(248): 1652806770076
-finished receiving transmission(248): 1652806770185
-started receiving transmission(120): 1652806772841
-finished receiving transmission(120): 1652806772948
+108
+111
+116
+109
+109
+106
+110
+114
+109
+107
 
-started receiving transmission(235): 1652806789737
-finished receiving transmission(235): 1652806794549
-started receiving transmission(52): 1652806804176
-finished receiving transmission(52): 1652806809051
-started receiving transmission(59): 1652806811242
-finished receiving transmission(59): 1652806816009
-started receiving transmission(168): 1652806818066
-finished receiving transmission(168): 1652806822807
-started receiving transmission(65): 1652806824761
-finished receiving transmission(65): 1652806829562
-started receiving transmission(2): 1652806831518
-finished receiving transmission(2): 1652806836324
-started receiving transmission(2): 1652806838379
-finished receiving transmission(2): 1652806843250
-started receiving transmission(2): 1652806845958
-finished receiving transmission(2): 1652806850801
-started receiving transmission(133): 1652806852716
-finished receiving transmission(133): 1652806857576
-started receiving transmission(185): 1652806859474
-finished receiving transmission(185): 1652806864271
+4812
+4875
+4767
+4741
+4801
+4806
+4871
+4843
+4860
+4797
 
-started receiving transmission(113): 1652806879749
-finished receiving transmission(113): 1652806889450
-started receiving transmission(14): 1652806915080
-finished receiving transmission(14): 1652806924742
-started receiving transmission(135): 1652806931056
-finished receiving transmission(135): 1652806940658
-started receiving transmission(56): 1652806942727
-finished receiving transmission(56): 1652806952302
-started receiving transmission(166): 1652806956859
-finished receiving transmission(166): 1652806966431
-started receiving transmission(159): 1652806970069
-finished receiving transmission(159): 1652806979693
-started receiving transmission(18): 1652806983586
-finished receiving transmission(18): 1652806993085
-started receiving transmission(88): 1652807020758
-finished receiving transmission(88): 1652807030462
-started receiving transmission(101): 1652807033047
-finished receiving transmission(101): 1652807042661
-started receiving transmission(133): 1652807045336
-finished receiving transmission(133): 1652807054933
+9701
+9662
+9602
+9575
+9572
+9624
+9499
+9704
+9614
+9597
 
-started receiving transmission(159): 1652807068052
-finished receiving transmission(159): 1652807115952
-started receiving transmission(225): 1652807134119
-finished receiving transmission(225): 1652807182388
-started receiving transmission(118): 1652807186044
-finished receiving transmission(118): 1652807234237
-started receiving transmission(175): 1652807242564
-finished receiving transmission(175): 1652807290666
-started receiving transmission(100): 1652807294493
-finished receiving transmission(100): 1652807342580
-started receiving transmission(196): 1652807347940
-finished receiving transmission(196): 1652807395922
-started receiving transmission(104): 1652807404169
-finished receiving transmission(104): 1652807452145
-started receiving transmission(198): 1652807460684
-finished receiving transmission(198): 1652807508375
-started receiving transmission(7): 1652807511373
-finished receiving transmission(7): 1652807559232
-started receiving transmission(5): 1652807569742
-finished receiving transmission(5): 1652807617421
+47900
+48269
+48193
+48102
+48087
+47982
+47976
+47691
+47859
+47679
