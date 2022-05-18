@@ -5,3 +5,7 @@ Erstelle ein Transmit- (TX) und Receive-(RX) Programm in jeweils zwei verschiede
 V1:
 In der ersten Version sollen KEINE Kontrollnachrichten zwischen TX und RX verwendet werden!
 Die Fehlerfreiheit soll nur mittels Prüfsumme oder Hash sichergestellt werden.
+
+V2:
+In der zweiten Version sollen die Programme um ein Stop&Wait Protokoll erweitert werden.
+D.h. der Empfänger bestätigt den Erhalt der Nachricht, bevor der Sender weitersendet.
