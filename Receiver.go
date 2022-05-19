@@ -243,11 +243,6 @@ func (r *Receiver) handleData(p packets.DataPacket, t *core.TransmissionIN) erro
 		return err
 	}
 
-	err = t.FileIO.Flush()
-	if err != nil {
-		return err
-	}
-
 	_, err = t.Hash.Write(p.Data)
 	if err != nil {
 		return err
