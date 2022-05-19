@@ -211,10 +211,6 @@ func (r *Receiver) handleInfo(p packets.InfoPacket, t *core.TransmissionIN) erro
 	if t.IsInitialised || p.SequenceNr != 0 {
 		return fmt.Errorf("unexpected packet with header %+v", p.Header)
 	}
-	// PRINTING
-	//fmt.Printf("started receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
-	fmt.Fprintf(log, "started receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
-	log.Flush()
 
 	t.StartTime = time.Now()
 
@@ -273,8 +269,7 @@ func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *core.Transmission
 	r.closeTransmission(t.Uid)
 
 	// PRINTING
-	//fmt.Printf("finished receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
-	fmt.Fprintf(log, "finished receiving transmission(%d): %d\n", t.Uid, time.Now().UnixMilli())
+	fmt.Fprintf(log, "%d\n", time.Since(t.StartTime).Milliseconds())
 	log.Flush()
 	return nil
 }
