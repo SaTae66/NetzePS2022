@@ -218,7 +218,7 @@ func (r *Receiver) handleInfo(p packets.InfoPacket, t *core.TransmissionIN) erro
 
 	t.StartTime = time.Now()
 
-	err := r.initFileIO(path.Join(t.OutPath, p.Filename), t)
+	err := r.initFileIO(path.Join(t.OutPath, path.Clean(p.Filename)), t)
 	if err != nil {
 		return err
 	}
