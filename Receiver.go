@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/twmb/murmur3"
+	"math"
 	"net"
 	"os"
 	"path"
@@ -14,15 +15,13 @@ import (
 	"time"
 )
 
-type ReceiverSettings struct {
-	maxPacketSize  int           // maximum size of a packet of this transmission that is allowed
+type Settings struct {
 	networkTimeout time.Duration // timeout as time.Duration after which the connection is closed and the transmission is aborted
-	bufferLimit    int           // maximum size of the packet buffer in packets
-	outPath        string        // path of directory in which to store transmissions
 }
 
 type Receiver struct {
-	settings ReceiverSettings
+	settings Settings
+	outPath  string // path of directory in which to store transmissions
 
 	keepRunning bool
 
@@ -30,15 +29,9 @@ type Receiver struct {
 	transmissions map[uint8]*network.TransmissionIN
 }
 
-func NewReceiver(maxPacketSize int, networkTimeout int, bufferLimit int, outPath string, addr *net.UDPAddr) (*Receiver, error) {
-	if maxPacketSize < packets.HeaderSize+1 {
-		return nil, errors.New("maxPacketSize must be at least the size of the header +1")
-	}
+func NewReceiver(networkTimeout int, outPath string, addr *net.UDPAddr) (*Receiver, error) {
 	if networkTimeout < 1 {
 		return nil, errors.New("timeout must be at least 1 second")
-	}
-	if bufferLimit < 1 {
-		return nil, errors.New("bufferLimit must be at least 1 packet")
 	}
 	if addr == nil {
 		return nil, errors.New("addr must not be nil")
@@ -50,12 +43,10 @@ func NewReceiver(maxPacketSize int, networkTimeout int, bufferLimit int, outPath
 	}
 
 	return &Receiver{
-		settings: ReceiverSettings{
-			maxPacketSize:  maxPacketSize,
+		settings: Settings{
 			networkTimeout: time.Duration(networkTimeout) * time.Second,
-			bufferLimit:    bufferLimit,
-			outPath:        outPath,
 		},
+		outPath:       outPath,
 		conn:          conn,
 		transmissions: make(map[uint8]*network.TransmissionIN),
 	}, nil
@@ -70,7 +61,10 @@ func (r *Receiver) Start(status chan error) {
 func (r *Receiver) run(status chan error) {
 	for r.keepRunning {
 		nextPacket, addr, err := r.nextUDPMessage()
-		if err != nil {
+		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
+			// timeout happened
+			continue
+		} else if err != nil {
 			status <- err
 			continue
 		}
@@ -109,7 +103,14 @@ func (r *Receiver) closeTransmission(uid uint8) {
 }
 
 func (r *Receiver) nextUDPMessage() (*bytes.Reader, *net.UDPAddr, error) {
-	rawBytes := make([]byte, r.settings.maxPacketSize)
+	rawBytes := make([]byte, math.MaxUint16-8)
+
+	// make timeout to be able to react to a Stop() call and not block until next UDPPacket
+	err := r.conn.SetReadDeadline(time.Now().Add(1 * time.Second))
+	if err != nil {
+		return nil, nil, err
+	}
+
 	n, _, _, addr, err := r.conn.ReadMsgUDP(rawBytes, nil)
 	if err != nil {
 		return nil, nil, err
@@ -122,7 +123,7 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader,
 	transmission := r.transmissions[header.StreamUID]
 	if transmission == nil {
 		if header.PacketType != packets.Info {
-			return nil //ignore unexpected packets (out of order or timed out connections
+			return nil //ignore unexpected packets (out of order or timed out connections)
 		}
 		transmission = r.openNewTransmission(header.StreamUID)
 	}
@@ -183,7 +184,7 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader,
 
 func (r *Receiver) handleInfo(p packets.InfoPacket, t *network.TransmissionIN) error {
 	t.StartTime = time.Now()
-	err := r.initFileIO(path.Join(r.settings.outPath, path.Clean(p.Filename)), t)
+	err := r.initFileIO(path.Join(r.outPath, path.Clean(p.Filename)), t)
 	if err != nil {
 		return err
 	}
@@ -240,6 +241,20 @@ func (r *Receiver) sendAck(header packets.Header, addr *net.UDPAddr) error {
 	return nil
 }
 
+func (r *Receiver) closeIdleConnections() {
+	for i := 0; i < 256; i++ {
+		uid := uint8(i)
+		curTransmission := r.transmissions[uid]
+		if curTransmission == nil {
+			continue
+		}
+		if time.Now().After(curTransmission.LastUpdated.Add(r.settings.networkTimeout)) {
+			_, _ = fmt.Fprintf(errorLog, "transmission %d timed out\n", i)
+			r.closeTransmission(uid)
+		}
+	}
+}
+
 func (r *Receiver) initFileIO(filePath string, t *network.TransmissionIN) error {
 	_, err := os.Open(filePath)
 	if os.IsExist(err) {
@@ -254,6 +269,6 @@ func (r *Receiver) initFileIO(filePath string, t *network.TransmissionIN) error 
 		return err
 	}
 
-	t.File = bufio.NewWriterSize(file, r.settings.maxPacketSize)
+	t.File = bufio.NewWriterSize(file, math.MaxUint16-8)
 	return nil
 }

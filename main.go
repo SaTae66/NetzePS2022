@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"satae66.dev/netzeps2022/cli"
-	"satae66.dev/netzeps2022/network"
 )
 
 /*
@@ -37,7 +36,6 @@ func (cmd *DefaultCommand) SetDefaultFlags(fs *flag.FlagSet) {
 	fs.StringVar(&cmd.localAddress, "lAddr", "127.0.0.1", "Listen IP-Address [default = 127.0.0.1]")
 	fs.IntVar(&cmd.localPort, "lPort", 6969, "Listen port [default = 6969]")
 
-	fs.IntVar(&cmd.maxPacketSize, "packetSize", 512, "Maximum size of each packet [default = 512]")
 	fs.IntVar(&cmd.connectionTimeout, "timeout", 10, "Timeout of the connection in seconds [default = 10]")
 }
 
@@ -64,6 +62,7 @@ func NewSendCommand() *SendCommand {
 
 	cmd.fs.StringVar(&cmd.destinationAddress, "rAddr", "localhost", "Remote IP-Address [default = localhost]")
 	cmd.fs.IntVar(&cmd.destinationPort, "rPort", 6969, "Remote port [default = 6969]")
+	cmd.fs.IntVar(&cmd.maxPacketSize, "packetSize", 512, "Maximum size of each packet [default = 512]")
 	cmd.fs.StringVar(&cmd.filename, "filename", "", "The file to send")
 	return cmd
 }
@@ -191,7 +190,6 @@ func main() {
 func startReceiver(cmd *ReceiveCommand) error {
 	lIp := cmd.localAddress
 	lPort := cmd.localPort
-	maxPacketSize := cmd.maxPacketSize
 	netTimeout := cmd.connectionTimeout
 	outPath := cmd.outDir
 
@@ -206,17 +204,10 @@ func startReceiver(cmd *ReceiveCommand) error {
 	}
 
 	// Receiver
-	//TODO: remove buffer
-	r, err := NewReceiver(maxPacketSize, netTimeout, 100000, outPath, lAddr)
+	r, err := NewReceiver(netTimeout, outPath, lAddr)
 	if err != nil {
 		return err
 	}
-
-	cleaner, err := network.NewTransmissionCleaner(1, 10, &r.transmissions)
-	if err != nil {
-		return err
-	}
-	go cleaner.Start()
 
 	// CLI
 	ui, err := cli.NewCliWorker(1, &r.transmissions)
@@ -231,6 +222,7 @@ func startReceiver(cmd *ReceiveCommand) error {
 	go func() {
 		for {
 			_, _ = fmt.Fprintf(errorLog, "%s\n", <-errorChannel)
+			_ = errorLog.Flush()
 		}
 	}()
 
