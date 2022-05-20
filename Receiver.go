@@ -64,27 +64,29 @@ func NewReceiver(maxPacketSize int, networkTimeout int, bufferLimit int, outPath
 func (r *Receiver) Start(status chan error) {
 	r.keepRunning = true
 
-	go func() {
-		for r.keepRunning {
-			nextPacket, addr, err := r.nextUDPMessage()
-			if err != nil {
-				status <- err
-				continue
-			}
+	go r.run(status)
+}
 
-			header, err := packets.ParseHeader(nextPacket)
-			if err != nil {
-				status <- err
-				continue
-			}
-
-			err = r.handlePacket(header, nextPacket, addr)
-			if err != nil {
-				status <- err
-				continue
-			}
+func (r *Receiver) run(status chan error) {
+	for r.keepRunning {
+		nextPacket, addr, err := r.nextUDPMessage()
+		if err != nil {
+			status <- err
+			continue
 		}
-	}()
+
+		header, err := packets.ParseHeader(nextPacket)
+		if err != nil {
+			status <- err
+			continue
+		}
+
+		err = r.handlePacket(header, nextPacket, addr)
+		if err != nil {
+			status <- err
+			continue
+		}
+	}
 }
 
 func (r *Receiver) Stop() {
@@ -94,18 +96,9 @@ func (r *Receiver) Stop() {
 func (r *Receiver) openNewTransmission(uid uint8) *network.TransmissionIN {
 	newTransmission := network.TransmissionIN{
 		Transmission: network.Transmission{
-			SeqNr:           0,
-			NetworkIO:       net.UDPConn{},
-			FileIO:          bufio.ReadWriter{},
-			TransmittedSize: 0,
-			TotalSize:       0,
-			Uid:             uid,
-			StartTime:       time.Time{},
-			Hash:            murmur3.New128(),
+			Uid:  uid,
+			Hash: murmur3.New128(),
 		},
-		OutPath:     r.settings.outPath,
-		BufferLimit: r.settings.bufferLimit,
-		Buffer:      make(map[uint32]*packets.DataPacket),
 	}
 	r.transmissions[uid] = &newTransmission
 	return &newTransmission
@@ -137,6 +130,7 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader,
 	defer func() {
 		transmission.LastUpdated = time.Now()
 		if err != nil {
+			//TODO: send error packet
 			r.closeTransmission(transmission.Uid)
 		}
 	}()
@@ -152,13 +146,6 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader,
 		if err != nil {
 			return err
 		}
-		if addr != nil {
-			header.PacketType = packets.Ack
-			_, _, err = r.conn.WriteMsgUDP(header.ToBytes(), nil, addr)
-			if err != nil {
-				return err
-			}
-		}
 		break
 	case packets.Data:
 		dataPacket, err := packets.ParseDataPacket(udpMessage)
@@ -169,17 +156,6 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader,
 		err = r.handleData(dataPacket, transmission)
 		if err != nil {
 			return err
-		}
-		err = r.handleBuffer(transmission)
-		if err != nil {
-			return err
-		}
-		if addr != nil {
-			header.PacketType = packets.Ack
-			_, _, err = r.conn.WriteMsgUDP(header.ToBytes(), nil, addr)
-			if err != nil {
-				return err
-			}
 		}
 		break
 	case packets.Finalize:
@@ -192,49 +168,33 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader,
 		if err != nil {
 			return err
 		}
-		if addr != nil {
-			header.PacketType = packets.Ack
-			_, _, err = r.conn.WriteMsgUDP(header.ToBytes(), nil, addr)
-			if err != nil {
-				return err
-			}
-		}
 		break
 	default:
 		return fmt.Errorf("malformed packet with header %v", header)
+	}
+
+	err = r.sendAck(header, addr)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func (r *Receiver) handleInfo(p packets.InfoPacket, t *network.TransmissionIN) error {
-	if t.IsInitialised || p.SequenceNr != 0 {
-		return fmt.Errorf("unexpected packet with header %+v", p.Header)
-	}
-
 	t.StartTime = time.Now()
-
-	err := r.initFileIO(path.Join(t.OutPath, path.Clean(p.Filename)), t)
+	err := r.initFileIO(path.Join(r.settings.outPath, path.Clean(p.Filename)), t)
 	if err != nil {
 		return err
 	}
 
 	t.TotalSize = p.Filesize
-	t.IsInitialised = true
 	t.SeqNr++
 	return nil
 }
 
 func (r *Receiver) handleData(p packets.DataPacket, t *network.TransmissionIN) error {
-	if p.SequenceNr != t.SeqNr {
-		if len(t.Buffer) >= t.BufferLimit {
-			return errors.New("packet buffer full")
-		}
-		t.Buffer[p.SequenceNr] = &p
-		return nil
-	}
-
-	_, err := t.FileIO.Write(p.Data)
+	_, err := t.File.Write(p.Data)
 	if err != nil {
 		return err
 	}
@@ -250,10 +210,7 @@ func (r *Receiver) handleData(p packets.DataPacket, t *network.TransmissionIN) e
 }
 
 func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *network.TransmissionIN) error {
-	if p.SequenceNr != t.SeqNr {
-		t.Finalize = &p
-		return nil
-	}
+	_ = t.File.Flush()
 
 	actualHash := make([]byte, 0)
 	actualHash = t.Hash.Sum(actualHash)
@@ -265,7 +222,6 @@ func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *network.Transmiss
 		return fmt.Errorf("integrity check failed; expected:<%x> actual:<%x>", expectedHash, actualHash)
 	}
 
-	_ = t.FileIO.Flush()
 	r.closeTransmission(t.Uid)
 
 	// PRINTING
@@ -274,20 +230,11 @@ func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *network.Transmiss
 	return nil
 }
 
-func (r *Receiver) handleBuffer(t *network.TransmissionIN) error {
-	for p, exists := t.Buffer[t.SeqNr]; exists; p, exists = t.Buffer[t.SeqNr] {
-		delete(t.Buffer, t.SeqNr)
-		err := r.handlePacket(p.Header, bytes.NewReader(p.Data), nil)
-		if err != nil {
-			return err
-		}
-	}
-
-	if t.Finalize != nil && t.Finalize.Header.SequenceNr == t.SeqNr {
-		err := r.handleFinalize(*t.Finalize, t)
-		if err != nil {
-			return err
-		}
+func (r *Receiver) sendAck(header packets.Header, addr *net.UDPAddr) error {
+	header.PacketType = packets.Ack
+	_, _, err := r.conn.WriteMsgUDP(header.ToBytes(), nil, addr)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -307,6 +254,6 @@ func (r *Receiver) initFileIO(filePath string, t *network.TransmissionIN) error 
 		return err
 	}
 
-	t.FileIO = bufio.ReadWriter{Writer: bufio.NewWriterSize(file, r.settings.maxPacketSize)}
+	t.File = bufio.NewWriterSize(file, r.settings.maxPacketSize)
 	return nil
 }
