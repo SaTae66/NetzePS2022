@@ -3,7 +3,7 @@ package packets
 import "bytes"
 
 // AckPacketSize represents the minimum payload size of a AckPacket
-const AckPacketSize = 1
+const AckPacketSize = 0
 
 type AckPacket struct {
 	Header
@@ -13,7 +13,7 @@ func NewAckPacket() AckPacket {
 	return AckPacket{}
 }
 
-func ParseAckPacket(r *bytes.Reader) (AckPacket, error) {
+func ParseAckPacket(_ *bytes.Reader) (AckPacket, error) {
 	return AckPacket{}, nil
 }
 
