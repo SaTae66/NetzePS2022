@@ -11,12 +11,6 @@ import (
 	"satae66.dev/netzeps2022/core"
 )
 
-type Command interface {
-	Name() string
-
-	Init([]string) error
-}
-
 /*
 /----------------------------------------------------------------------------------------------------------------------\
 |                                                      CONSTANTS                                                       |
@@ -244,5 +238,17 @@ func startReceiver(cmd *ReceiveCommand) error {
 }
 
 func startSender(cmd *SendCommand) error {
+	/*
+		lIp := cmd.localAddress
+		lPort := cmd.localPort
+		rIp := cmd.destinationAddress
+		rPort := cmd.destinationPort
+		maxPacketSize := cmd.maxPacketSize
+		netTimeout := cmd.connectionTimeout
+		fileName := cmd.filename
+	*/
+
+	//TODO: implement sender
+
 	return fmt.Errorf("%v", "sender not implemented yet")
 }
