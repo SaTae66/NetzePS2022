@@ -34,7 +34,7 @@ func NewCliWorker(refreshPerSecond int, anchor *map[uint8]*core.TransmissionIN) 
 	}, nil
 }
 
-func (w *UIDrawer) Start(inputHandler chan string) {
+func (w *UIDrawer) Start() {
 	w.run = true
 	/*
 		// switch stdin into 'raw' mode
