@@ -11,12 +11,6 @@ import (
 	"satae66.dev/netzeps2022/core"
 )
 
-type Command interface {
-	Name() string
-
-	Init([]string) error
-}
-
 /*
 /----------------------------------------------------------------------------------------------------------------------\
 |                                                      CONSTANTS                                                       |
@@ -130,7 +124,7 @@ func (cmd *ReceiveCommand) Init(args []string) error {
 \----------------------------------------------------------------------------------------------------------------------/
 */
 
-var log *bufio.Writer
+var measureLog *bufio.Writer
 var errorLog *bufio.Writer
 
 func init() {
@@ -138,7 +132,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	log = bufio.NewWriter(logFile)
+	measureLog = bufio.NewWriter(logFile)
 
 	errorFile, err := os.Create("error_log.txt")
 	if err != nil {
@@ -244,5 +238,17 @@ func startReceiver(cmd *ReceiveCommand) error {
 }
 
 func startSender(cmd *SendCommand) error {
+	/*
+		lIp := cmd.localAddress
+		lPort := cmd.localPort
+		rIp := cmd.destinationAddress
+		rPort := cmd.destinationPort
+		maxPacketSize := cmd.maxPacketSize
+		netTimeout := cmd.connectionTimeout
+		fileName := cmd.filename
+	*/
+
+	//TODO: implement sender
+
 	return fmt.Errorf("%v", "sender not implemented yet")
 }

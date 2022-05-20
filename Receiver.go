@@ -269,8 +269,8 @@ func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *core.Transmission
 	r.closeTransmission(t.Uid)
 
 	// PRINTING
-	_, _ = fmt.Fprintf(log, "%d\n", time.Since(t.StartTime).Milliseconds())
-	_ = log.Flush()
+	_, _ = fmt.Fprintf(measureLog, "%d\n", time.Since(t.StartTime).Milliseconds())
+	_ = measureLog.Flush()
 	return nil
 }
 
