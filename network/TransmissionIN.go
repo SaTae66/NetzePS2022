@@ -1,18 +1,14 @@
 package network
 
 import (
-	"satae66.dev/netzeps2022/network/packets"
+	"bufio"
 	"time"
 )
 
 type TransmissionIN struct {
 	Transmission
-	IsInitialised bool
-	OutPath       string
+
+	File *bufio.Writer
 
 	LastUpdated time.Time
-
-	BufferLimit int
-	Buffer      map[uint32]*packets.DataPacket
-	Finalize    *packets.FinalizePacket
 }
