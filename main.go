@@ -8,7 +8,7 @@ import (
 	"net"
 	"os"
 	"satae66.dev/netzeps2022/cli"
-	"satae66.dev/netzeps2022/core"
+	"satae66.dev/netzeps2022/network"
 )
 
 /*
@@ -212,7 +212,7 @@ func startReceiver(cmd *ReceiveCommand) error {
 		return err
 	}
 
-	cleaner, err := core.NewTransmissionCleaner(1, 10, &r.transmissions)
+	cleaner, err := network.NewTransmissionCleaner(1, 10, &r.transmissions)
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package core
+package network
 
 import (
 	"satae66.dev/netzeps2022/network/packets"

@@ -9,7 +9,7 @@ import (
 	"net"
 	"os"
 	"path"
-	"satae66.dev/netzeps2022/core"
+	"satae66.dev/netzeps2022/network"
 	"satae66.dev/netzeps2022/network/packets"
 	"time"
 )
@@ -27,7 +27,7 @@ type Receiver struct {
 	keepRunning bool
 
 	conn          *net.UDPConn
-	transmissions map[uint8]*core.TransmissionIN
+	transmissions map[uint8]*network.TransmissionIN
 }
 
 func NewReceiver(maxPacketSize int, networkTimeout int, bufferLimit int, outPath string, addr *net.UDPAddr) (*Receiver, error) {
@@ -57,7 +57,7 @@ func NewReceiver(maxPacketSize int, networkTimeout int, bufferLimit int, outPath
 			outPath:        outPath,
 		},
 		conn:          conn,
-		transmissions: make(map[uint8]*core.TransmissionIN),
+		transmissions: make(map[uint8]*network.TransmissionIN),
 	}, nil
 }
 
@@ -91,9 +91,9 @@ func (r *Receiver) Stop() {
 	r.keepRunning = false
 }
 
-func (r *Receiver) openNewTransmission(uid uint8) *core.TransmissionIN {
-	newTransmission := core.TransmissionIN{
-		Transmission: core.Transmission{
+func (r *Receiver) openNewTransmission(uid uint8) *network.TransmissionIN {
+	newTransmission := network.TransmissionIN{
+		Transmission: network.Transmission{
 			SeqNr:           0,
 			NetworkIO:       net.UDPConn{},
 			FileIO:          bufio.ReadWriter{},
@@ -207,7 +207,7 @@ func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader,
 	return nil
 }
 
-func (r *Receiver) handleInfo(p packets.InfoPacket, t *core.TransmissionIN) error {
+func (r *Receiver) handleInfo(p packets.InfoPacket, t *network.TransmissionIN) error {
 	if t.IsInitialised || p.SequenceNr != 0 {
 		return fmt.Errorf("unexpected packet with header %+v", p.Header)
 	}
@@ -225,7 +225,7 @@ func (r *Receiver) handleInfo(p packets.InfoPacket, t *core.TransmissionIN) erro
 	return nil
 }
 
-func (r *Receiver) handleData(p packets.DataPacket, t *core.TransmissionIN) error {
+func (r *Receiver) handleData(p packets.DataPacket, t *network.TransmissionIN) error {
 	if p.SequenceNr != t.SeqNr {
 		if len(t.Buffer) >= t.BufferLimit {
 			return errors.New("packet buffer full")
@@ -249,7 +249,7 @@ func (r *Receiver) handleData(p packets.DataPacket, t *core.TransmissionIN) erro
 	return nil
 }
 
-func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *core.TransmissionIN) error {
+func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *network.TransmissionIN) error {
 	if p.SequenceNr != t.SeqNr {
 		t.Finalize = &p
 		return nil
@@ -274,7 +274,7 @@ func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *core.Transmission
 	return nil
 }
 
-func (r *Receiver) handleBuffer(t *core.TransmissionIN) error {
+func (r *Receiver) handleBuffer(t *network.TransmissionIN) error {
 	for p, exists := t.Buffer[t.SeqNr]; exists; p, exists = t.Buffer[t.SeqNr] {
 		delete(t.Buffer, t.SeqNr)
 		err := r.handlePacket(p.Header, bytes.NewReader(p.Data), nil)
@@ -293,7 +293,7 @@ func (r *Receiver) handleBuffer(t *core.TransmissionIN) error {
 	return nil
 }
 
-func (r *Receiver) initFileIO(filePath string, t *core.TransmissionIN) error {
+func (r *Receiver) initFileIO(filePath string, t *network.TransmissionIN) error {
 	_, err := os.Open(filePath)
 	if os.IsExist(err) {
 		return errors.New("file already exists at specified path")

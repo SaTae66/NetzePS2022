@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"satae66.dev/netzeps2022/core"
+	"satae66.dev/netzeps2022/network"
 	"strings"
 	"time"
 )
@@ -14,10 +14,10 @@ type UIDrawer struct {
 
 	sleepPeriod int // time between ui refreshes in milliseconds
 
-	anchor *map[uint8]*core.TransmissionIN // anchor back to the transmission map
+	anchor *map[uint8]*network.TransmissionIN // anchor back to the transmission map
 }
 
-func NewCliWorker(refreshPerSecond int, anchor *map[uint8]*core.TransmissionIN) (*UIDrawer, error) {
+func NewCliWorker(refreshPerSecond int, anchor *map[uint8]*network.TransmissionIN) (*UIDrawer, error) {
 	if refreshPerSecond < 1 {
 		return nil, errors.New("ui must be refreshed at least once per second")
 	}
