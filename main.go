@@ -67,10 +67,6 @@ func NewSendCommand() *SendCommand {
 	return cmd
 }
 
-func (cmd *SendCommand) Name() string {
-	return "send"
-}
-
 func (cmd *SendCommand) Init(args []string) error {
 	cmd.SetDefaultFlags(cmd.fs)
 
@@ -106,10 +102,6 @@ func NewReceiveCommand() *ReceiveCommand {
 
 	cmd.fs.StringVar(&cmd.outDir, "outDir", ".", "The output directory")
 	return cmd
-}
-
-func (cmd *ReceiveCommand) Name() string {
-	return "receive"
 }
 
 func (cmd *ReceiveCommand) Init(args []string) error {
