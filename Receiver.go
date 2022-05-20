@@ -60,7 +60,7 @@ func (r *Receiver) Start(status chan error) {
 
 func (r *Receiver) run(status chan error) {
 	for r.keepRunning {
-		nextPacket, addr, err := r.nextUDPMessage()
+		msg, addr, err := r.nextUDPMessage()
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 			// timeout happened
 			continue
@@ -69,13 +69,7 @@ func (r *Receiver) run(status chan error) {
 			continue
 		}
 
-		header, err := packets.ParseHeader(nextPacket)
-		if err != nil {
-			status <- err
-			continue
-		}
-
-		err = r.handlePacket(header, nextPacket, addr)
+		err = r.handlePacket(msg, addr)
 		if err != nil {
 			status <- err
 			continue
@@ -119,7 +113,12 @@ func (r *Receiver) nextUDPMessage() (*bytes.Reader, *net.UDPAddr, error) {
 	return bytes.NewReader(rawBytes[:n]), addr, nil
 }
 
-func (r *Receiver) handlePacket(header packets.Header, udpMessage *bytes.Reader, addr *net.UDPAddr) (err error) {
+func (r *Receiver) handlePacket(udpMessage *bytes.Reader, addr *net.UDPAddr) (err error) {
+	header, err := packets.ParseHeader(udpMessage)
+	if err != nil {
+		return err
+	}
+
 	transmission := r.transmissions[header.StreamUID]
 	if transmission == nil {
 		if header.PacketType != packets.Info {
