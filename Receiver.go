@@ -60,6 +60,7 @@ func (r *Receiver) Start(status chan error) {
 
 func (r *Receiver) run(status chan error) {
 	for r.keepRunning {
+		r.closeIdleConnections()
 		msg, addr, err := r.nextUDPMessage()
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 			// timeout happened
@@ -182,6 +183,7 @@ func (r *Receiver) handlePacket(udpMessage *bytes.Reader, addr *net.UDPAddr) (er
 }
 
 func (r *Receiver) handleInfo(p packets.InfoPacket, t *network.TransmissionIN) error {
+	//TODO: move this to TransmissionIN?
 	t.StartTime = time.Now()
 	err := r.initFileIO(path.Join(r.outPath, path.Clean(p.Filename)), t)
 	if err != nil {
@@ -194,6 +196,7 @@ func (r *Receiver) handleInfo(p packets.InfoPacket, t *network.TransmissionIN) e
 }
 
 func (r *Receiver) handleData(p packets.DataPacket, t *network.TransmissionIN) error {
+	//TODO: move this to TransmissionIN?
 	_, err := t.File.Write(p.Data)
 	if err != nil {
 		return err
@@ -210,6 +213,7 @@ func (r *Receiver) handleData(p packets.DataPacket, t *network.TransmissionIN) e
 }
 
 func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *network.TransmissionIN) error {
+	//TODO: move this to TransmissionIN?
 	_ = t.File.Flush()
 
 	actualHash := make([]byte, 0)
@@ -231,6 +235,7 @@ func (r *Receiver) handleFinalize(p packets.FinalizePacket, t *network.Transmiss
 }
 
 func (r *Receiver) sendAck(header packets.Header, addr *net.UDPAddr) error {
+	//TODO: move this to TransmissionIN?
 	header.PacketType = packets.Ack
 	_, _, err := r.conn.WriteMsgUDP(header.ToBytes(), nil, addr)
 	if err != nil {
